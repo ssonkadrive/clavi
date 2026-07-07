@@ -77,7 +77,6 @@ export async function sendMessage(proposalId: string, content: string) {
         code: messageError.code,
         details: messageError.details,
         hint: messageError.hint,
-        status: messageError.status,
       })
       return { error: `메시지 저장 실패: ${messageError.message}`, data: undefined }
     }
