@@ -124,6 +124,9 @@ export default function ProfileEditPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
+        <Link href="/profile" className="text-blue-600 hover:text-blue-700 mb-6 inline-block font-medium">
+          ← 뒤로 가기
+        </Link>
         <h1 className="text-3xl font-extrabold text-gray-900 mb-8">프로필 수정</h1>
 
         {/* 에러 메시지 */}

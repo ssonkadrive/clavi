@@ -144,15 +144,17 @@ export default function MessagesPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        {/* 뒤로가기 */}
+        <Link
+          href={`/interviews/${proposalId}`}
+          className="text-blue-600 hover:text-blue-700 mb-6 inline-block font-medium"
+        >
+          ← 뒤로 가기
+        </Link>
+
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900">면접 메시지</h1>
-          <Link
-            href={`/interviews/${proposalId}`}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            상세보기
-          </Link>
         </div>
 
         {/* 메시지 컨테이너 */}

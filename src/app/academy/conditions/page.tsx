@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import ConditionsForm from './ConditionsForm'
 
 interface SkillCategory {
@@ -64,6 +65,9 @@ export default async function AcademyConditionsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        <Link href="/academy" className="text-blue-600 hover:text-blue-700 mb-6 inline-block font-medium">
+          ← 뒤로 가기
+        </Link>
         <h1 className="text-3xl font-extrabold text-gray-900 mb-8">채용 조건 설정</h1>
 
         {categoriesError ? (
