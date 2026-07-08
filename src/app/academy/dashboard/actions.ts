@@ -63,11 +63,6 @@ export async function getAcademyDashboardData(): Promise<{
       data: statsData,
     })
 
-    console.log('[getAcademyDashboardData] statsData 전체:', statsData)
-    console.log('[getAcademyDashboardData] statsData 타입:', typeof statsData)
-    console.log('[getAcademyDashboardData] statsData null?:', statsData === null)
-    console.log('[getAcademyDashboardData] statsData undefined?:', statsData === undefined)
-
     let stats = {
       instructors_viewed: statsData?.instructors_viewed || 0,
       proposals_sent: statsData?.proposals_sent || 0,

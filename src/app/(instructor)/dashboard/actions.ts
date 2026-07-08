@@ -57,19 +57,12 @@ export async function getInstructorDashboardData(): Promise<{
       data: statsData,
     })
 
-    console.log('[getInstructorDashboardData] statsData 전체:', statsData)
-    console.log('[getInstructorDashboardData] statsData 타입:', typeof statsData)
-    console.log('[getInstructorDashboardData] statsData null?:', statsData === null)
-    console.log('[getInstructorDashboardData] statsData undefined?:', statsData === undefined)
-
     let stats = {
       profile_views: statsData?.profile_views || 0,
       proposals_received: statsData?.proposals_received || 0,
       proposals_accepted: statsData?.proposals_accepted || 0,
       messages_count: statsData?.messages_count || 0,
     }
-
-    console.log('[getInstructorDashboardData] stats 처리 후:', stats)
 
     if (statsError) {
       console.warn('[getInstructorDashboardData] 통계 조회 에러:', statsError.message)
