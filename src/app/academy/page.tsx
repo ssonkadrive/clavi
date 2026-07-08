@@ -1,4 +1,5 @@
 import { getAcademyDashboardData } from './dashboard/actions'
+import Link from 'next/link'
 
 export default async function AcademyHomePage() {
   const result = await getAcademyDashboardData()
@@ -43,6 +44,14 @@ export default async function AcademyHomePage() {
           </p>
         </div>
       </div>
+
+      {/* 강사 설정 버튼 */}
+      <Link
+        href="/academy/find-instructors"
+        className="block w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-bold text-center transition-colors"
+      >
+        🔍 원하는 강사 설정
+      </Link>
 
       {/* 최근 활동 미리보기 */}
       <div className="bg-white rounded-lg shadow p-4">
