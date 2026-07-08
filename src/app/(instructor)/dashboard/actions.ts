@@ -55,6 +55,8 @@ export async function getInstructorDashboardData(): Promise<{
         message: statsError.message,
         code: statsError.code,
         details: statsError.details,
+        hint: statsError.hint,
+        fullError: JSON.stringify(statsError, null, 2),
       })
     }
 

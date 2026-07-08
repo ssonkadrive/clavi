@@ -1,0 +1,41 @@
+'use client'
+
+interface ChatRoom {
+  id: string
+  name: string
+  lastMessage: string
+  unread: boolean
+}
+
+const mockChats: ChatRoom[] = [
+  { id: '1', name: '김수학', lastMessage: '안녕하세요!', unread: true },
+  { id: '2', name: '이영어', lastMessage: '면접 시간 확인했습니다', unread: false },
+  { id: '3', name: '박과학', lastMessage: '감사합니다', unread: false },
+]
+
+export default function MessagesPage() {
+  return (
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl font-bold">채팅</h1>
+
+      <div className="space-y-2">
+        {mockChats.map(chat => (
+          <div
+            key={chat.id}
+            className={`p-4 rounded-lg border flex justify-between items-center cursor-pointer ${
+              chat.unread ? 'bg-blue-50 border-blue-200' : 'bg-white'
+            }`}
+          >
+            <div>
+              <p className="font-bold">{chat.name}</p>
+              <p className="text-sm text-gray-500">{chat.lastMessage}</p>
+            </div>
+            {chat.unread && (
+              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
