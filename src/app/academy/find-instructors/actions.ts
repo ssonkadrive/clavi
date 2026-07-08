@@ -52,8 +52,12 @@ export async function searchInstructors(
       .single()
 
     if (condError) {
-      console.error('[searchInstructors] academy_conditions 조회 실패:', condError)
-      return { error: '원장 정보를 불러올 수 없습니다.', data: null }
+      console.error('[searchInstructors] academy_conditions 조회 실패:', {
+        message: condError.message,
+        code: condError.code,
+        details: condError.details,
+      })
+      return { error: `[academy_conditions] ${condError.message} (${condError.code})`, data: null }
     }
 
     const requiredSkills = academyConditions?.required_skills || []
@@ -66,8 +70,12 @@ export async function searchInstructors(
       .select('user_id, name, age, gender, education, years_of_experience, hourly_rate, certified')
 
     if (profileError) {
-      console.error('[searchInstructors] instructor_profiles 조회 실패:', profileError)
-      return { error: '강사 정보를 불러올 수 없습니다.', data: null }
+      console.error('[searchInstructors] instructor_profiles 조회 실패:', {
+        message: profileError.message,
+        code: profileError.code,
+        details: profileError.details,
+      })
+      return { error: `[instructor_profiles] ${profileError.message} (${profileError.code})`, data: null }
     }
 
     console.log('[searchInstructors] instructor_profiles 조회 완료:', instructorProfiles?.length || 0, '명')
@@ -79,8 +87,12 @@ export async function searchInstructors(
       .select('user_id, selected_skills')
 
     if (condQueryError) {
-      console.error('[searchInstructors] instructor_conditions 조회 실패:', condQueryError)
-      return { error: '강사 역량을 불러올 수 없습니다.', data: null }
+      console.error('[searchInstructors] instructor_conditions 조회 실패:', {
+        message: condQueryError.message,
+        code: condQueryError.code,
+        details: condQueryError.details,
+      })
+      return { error: `[instructor_conditions] ${condQueryError.message} (${condQueryError.code})`, data: null }
     }
 
     console.log('[searchInstructors] instructor_conditions 조회 완료:', instructorConditions?.length || 0, '명')
@@ -92,7 +104,11 @@ export async function searchInstructors(
       .eq('is_active', true)
 
     if (skillError) {
-      console.error('[searchInstructors] skill_categories 조회 실패:', skillError)
+      console.error('[searchInstructors] skill_categories 조회 실패:', {
+        message: skillError.message,
+        code: skillError.code,
+        details: skillError.details,
+      })
     }
 
     const skillMap = new Map(skillCategories?.map(s => [s.id, s.name]) || [])
@@ -177,8 +193,12 @@ export async function searchInstructors(
 
     return { data: results, error: null }
   } catch (err) {
-    console.error('[searchInstructors] 예외 발생:', err)
-    return { error: '검색 중 오류가 발생했습니다.', data: null }
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error('[searchInstructors] 예외 발생:', {
+      message: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined,
+    })
+    return { error: `[Exception] ${errorMessage}`, data: null }
   }
 }
 
