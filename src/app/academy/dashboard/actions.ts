@@ -56,24 +56,27 @@ export async function getAcademyDashboardData(): Promise<{
       .eq('academy_user_id', session.userId)
       .maybeSingle()
 
+    if (statsError) {
+      console.error('[getAcademyDashboardData] 통계 조회 에러:', {
+        message: statsError.message,
+        code: statsError.code,
+        details: statsError.details,
+      })
+    }
+
     console.log('[getAcademyDashboardData] academy_statistics 조회 결과:', {
       found: !!statsData,
-      error: statsError?.message,
-      errorCode: statsError?.code,
       data: statsData,
+      userId: session.userId,
     })
 
     let stats = {
-      instructors_viewed: statsData?.instructors_viewed || 0,
-      proposals_sent: statsData?.proposals_sent || 0,
-      proposals_accepted: statsData?.proposals_accepted || 0,
+      instructors_viewed: statsData?.instructors_viewed ?? 0,
+      proposals_sent: statsData?.proposals_sent ?? 0,
+      proposals_accepted: statsData?.proposals_accepted ?? 0,
     }
 
-    console.log('[getAcademyDashboardData] stats 처리 후:', stats)
-
-    if (statsError) {
-      console.warn('[getAcademyDashboardData] 통계 조회 에러:', statsError.message)
-    }
+    console.log('[getAcademyDashboardData] 최종 stats:', stats)
 
     // 3. interview_proposals (최근 10개) 조회
     console.log('[getAcademyDashboardData] 최근 제안 조회')

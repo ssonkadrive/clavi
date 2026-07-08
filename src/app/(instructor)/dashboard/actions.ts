@@ -50,23 +50,28 @@ export async function getInstructorDashboardData(): Promise<{
       .eq('instructor_id', session.userId)
       .maybeSingle()
 
+    if (statsError) {
+      console.error('[getInstructorDashboardData] 통계 조회 에러:', {
+        message: statsError.message,
+        code: statsError.code,
+        details: statsError.details,
+      })
+    }
+
     console.log('[getInstructorDashboardData] instructor_statistics 조회 결과:', {
       found: !!statsData,
-      error: statsError?.message,
-      errorCode: statsError?.code,
       data: statsData,
+      userId: session.userId,
     })
 
     let stats = {
-      profile_views: statsData?.profile_views || 0,
-      proposals_received: statsData?.proposals_received || 0,
-      proposals_accepted: statsData?.proposals_accepted || 0,
-      messages_count: statsData?.messages_count || 0,
+      profile_views: statsData?.profile_views ?? 0,
+      proposals_received: statsData?.proposals_received ?? 0,
+      proposals_accepted: statsData?.proposals_accepted ?? 0,
+      messages_count: statsData?.messages_count ?? 0,
     }
 
-    if (statsError) {
-      console.warn('[getInstructorDashboardData] 통계 조회 에러:', statsError.message)
-    }
+    console.log('[getInstructorDashboardData] 최종 stats:', stats)
 
     // 2. 지난 7일 제안 현황 조회
     console.log('[getInstructorDashboardData] 지난 7일 제안 조회')
