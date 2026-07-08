@@ -132,6 +132,11 @@ export default function FindInstructorsPage() {
                 <option value="영어">영어</option>
                 <option value="과학">과학</option>
                 <option value="물리">물리</option>
+                <option value="태권도">태권도</option>
+                <option value="연기">연기</option>
+                <option value="뮤지컬">뮤지컬</option>
+                <option value="클래식 음악">클래식 음악</option>
+                <option value="기타">기타</option>
               </select>
             </div>
 
@@ -144,8 +149,8 @@ export default function FindInstructorsPage() {
                 className="w-full px-2 py-1 border rounded text-sm"
               >
                 <option value="">전체</option>
-                <option value="남">남</option>
-                <option value="여">여</option>
+                <option value="남성">남성</option>
+                <option value="여성">여성</option>
               </select>
             </div>
 
