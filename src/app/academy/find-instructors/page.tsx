@@ -18,8 +18,6 @@ type FilterState = {
   selectedSkillIds: string[]
   education: string
   experienceMin: string
-  salaryMin: string
-  salaryMax: string
 }
 
 export default function FindInstructorsPage() {
@@ -32,15 +30,11 @@ export default function FindInstructorsPage() {
     selectedSkillIds: [],
     education: '',
     experienceMin: '',
-    salaryMin: '',
-    salaryMax: '',
   })
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     selectedSkillIds: [],
     education: '',
     experienceMin: '',
-    salaryMin: '',
-    salaryMax: '',
   })
 
   const [results, setResults] = useState<Instructor[]>([])
@@ -94,8 +88,6 @@ export default function FindInstructorsPage() {
         selectedSkillIds: filters.selectedSkillIds,
         education: filters.education || undefined,
         experienceMin: filters.experienceMin ? parseInt(filters.experienceMin) : undefined,
-        salaryMin: filters.salaryMin ? parseInt(filters.salaryMin) : undefined,
-        salaryMax: filters.salaryMax ? parseInt(filters.salaryMax) : undefined,
       })
 
       if (result.error) {
@@ -121,8 +113,6 @@ export default function FindInstructorsPage() {
       selectedSkillIds: [],
       education: '',
       experienceMin: '',
-      salaryMin: '',
-      salaryMax: '',
     }
     setFilters(empty)
     setActiveFilters(empty)
@@ -216,30 +206,6 @@ export default function FindInstructorsPage() {
                   className="w-full px-2 py-1 border rounded text-sm"
                 />
               </div>
-
-              {/* 시급 범위 */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-gray-600">최소 시급</label>
-                  <input
-                    type="number"
-                    value={filters.salaryMin}
-                    onChange={e => handleFilterChange('salaryMin', e.target.value)}
-                    placeholder="30000"
-                    className="w-full px-2 py-1 border rounded text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">최대 시급</label>
-                  <input
-                    type="number"
-                    value={filters.salaryMax}
-                    onChange={e => handleFilterChange('salaryMax', e.target.value)}
-                    placeholder="50000"
-                    className="w-full px-2 py-1 border rounded text-sm"
-                  />
-                </div>
-              </div>
             </div>
           )}
 
@@ -263,7 +229,7 @@ export default function FindInstructorsPage() {
       )}
 
       {/* 적용된 필터 표시 */}
-      {(Object.values(activeFilters).some(v => v) || activeFilters.selectedSkillIds.length > 0) && (
+      {(activeFilters.education || activeFilters.experienceMin || activeFilters.selectedSkillIds.length > 0) && (
         <div className="bg-blue-50 p-3 rounded text-sm text-gray-700 border border-blue-200">
           <p>
             <span className="font-semibold">적용된 필터:</span>
@@ -286,11 +252,6 @@ export default function FindInstructorsPage() {
                     {instructor.education}
                   </p>
                 </div>
-                {instructor.certified && (
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
-                    ✓ 인증
-                  </span>
-                )}
               </div>
 
               <div className="space-y-1 mb-3">
@@ -299,9 +260,6 @@ export default function FindInstructorsPage() {
                 </p>
                 <p className="text-sm">
                   경력: <span className="font-medium">{instructor.experience}년</span>
-                </p>
-                <p className="text-sm">
-                  시급: <span className="font-medium text-blue-600">{instructor.hourly_rate?.toLocaleString()}원</span>
                 </p>
               </div>
 

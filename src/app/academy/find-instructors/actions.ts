@@ -7,8 +7,6 @@ interface SearchFilters {
   selectedSkillIds: string[]
   education?: string
   experienceMin?: number
-  salaryMin?: number
-  salaryMax?: number
 }
 
 export interface Instructor {
@@ -19,8 +17,6 @@ export interface Instructor {
   experience: number
   selected_skills: string[]
   cms_score: number
-  certified: boolean
-  hourly_rate?: number
 }
 
 export async function searchInstructors(
@@ -58,11 +54,11 @@ export async function searchInstructors(
     const requiredSkills = academyConditions?.required_skills || []
     console.log('[searchInstructors] requiredSkills:', requiredSkills)
 
-    // 3. 모든 강사 프로필 조회 (여러 쿼리에서 사용)
+    // 3. 모든 강사 프로필 조회
     console.log('[searchInstructors] instructor_profiles 조회 시작')
     const { data: instructorProfiles, error: profileError } = await supabase
       .from('instructor_profiles')
-      .select('user_id, name, education, years_of_experience, hourly_rate, certified')
+      .select('user_id, name, education, years_of_experience')
 
     if (profileError) {
       console.error('[searchInstructors] instructor_profiles 조회 실패:', {
@@ -92,23 +88,7 @@ export async function searchInstructors(
 
     console.log('[searchInstructors] instructor_conditions 조회 완료:', instructorConditions?.length || 0, '명')
 
-    // 5. skill_categories 조회 (이름 변환용)
-    const { data: skillCategories, error: skillError } = await supabase
-      .from('skill_categories')
-      .select('id, name')
-      .eq('is_active', true)
-
-    if (skillError) {
-      console.error('[searchInstructors] skill_categories 조회 실패:', {
-        message: skillError.message,
-        code: skillError.code,
-        details: skillError.details,
-      })
-    }
-
-    const skillMap = new Map(skillCategories?.map(s => [s.id, s.name]) || [])
-
-    // 6. 필터링 및 CMS 점수 계산
+    // 5. 필터링 및 CMS 점수 계산
     const results: Instructor[] = []
 
     instructorProfiles?.forEach((profile) => {
@@ -123,14 +103,6 @@ export async function searchInstructors(
 
       // 경력
       if (filters.experienceMin && (profile.years_of_experience || 0) < filters.experienceMin) {
-        return
-      }
-
-      // 시급
-      if (filters.salaryMin && profile.hourly_rate && profile.hourly_rate < filters.salaryMin) {
-        return
-      }
-      if (filters.salaryMax && profile.hourly_rate && profile.hourly_rate > filters.salaryMax) {
         return
       }
 
@@ -157,18 +129,17 @@ export async function searchInstructors(
         experience: profile.years_of_experience || 0,
         selected_skills: selectedSkills,
         cms_score: cms,
-        certified: profile.certified || false,
-        hourly_rate: profile.hourly_rate,
       })
     })
 
-    // 7. CMS 점수순 정렬
+    // 6. CMS 점수순 정렬
     results.sort((a, b) => b.cms_score - a.cms_score)
 
     console.log('[searchInstructors] 검색 완료:', {
       총개수: results.length,
       첫번째강사: results[0]?.name,
       첫번째강사스킬수: results[0]?.selected_skills.length,
+      CMS점수: results[0]?.cms_score,
     })
 
     return { data: results, error: null }
