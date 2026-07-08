@@ -10,11 +10,7 @@ interface Matching {
   subject: string
 }
 
-const mockData: Matching[] = [
-  { id: '1', academy_name: '서울수학학원', status: '진행중', date: '2026-07-08', subject: '수학' },
-  { id: '2', academy_name: '강남영어학원', status: '진행중', date: '2026-07-07', subject: '영어' },
-  { id: '3', academy_name: '과학전문학원', status: '대기', date: '2026-07-06', subject: '과학' },
-]
+const mockData: Matching[] = []
 
 type StatusType = '전체' | '대기' | '진행중' | '수락'
 

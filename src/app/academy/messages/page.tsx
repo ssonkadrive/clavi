@@ -7,11 +7,7 @@ interface ChatRoom {
   unread: boolean
 }
 
-const mockChats: ChatRoom[] = [
-  { id: '1', name: '김수학', lastMessage: '안녕하세요!', unread: true },
-  { id: '2', name: '이영어', lastMessage: '면접 시간 확인했습니다', unread: false },
-  { id: '3', name: '박과학', lastMessage: '감사합니다', unread: false },
-]
+const mockChats: ChatRoom[] = []
 
 export default function MessagesPage() {
   return (

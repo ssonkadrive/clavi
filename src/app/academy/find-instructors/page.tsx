@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 
 interface Instructor {
   id: string
@@ -15,46 +14,6 @@ interface Instructor {
   certified: boolean
   hourly_rate?: number
 }
-
-// 테스트 데이터 (실제로는 DB에서 조회)
-const mockInstructors: Instructor[] = [
-  {
-    id: '1',
-    name: '김수학',
-    age: 28,
-    gender: '남',
-    education: '서울대',
-    experience: 5,
-    subjects: ['수학'],
-    cms_score: 85,
-    certified: true,
-    hourly_rate: 35000,
-  },
-  {
-    id: '2',
-    name: '이영어',
-    age: 26,
-    gender: '여',
-    education: '연세대',
-    experience: 3,
-    subjects: ['영어'],
-    cms_score: 78,
-    certified: false,
-    hourly_rate: 30000,
-  },
-  {
-    id: '3',
-    name: '박과학',
-    age: 32,
-    gender: '남',
-    education: '포항공대',
-    experience: 7,
-    subjects: ['과학', '물리'],
-    cms_score: 92,
-    certified: true,
-    hourly_rate: 40000,
-  },
-]
 
 type FilterState = {
   subject: string
@@ -90,8 +49,8 @@ export default function FindInstructorsPage() {
     salaryMax: '',
   })
 
-  // 필터링된 강사 목록
-  const filteredInstructors = mockInstructors.filter(instructor => {
+  // 필터링된 강사 목록 (DB에서 조회해야 함)
+  const filteredInstructors = [].filter((instructor: Instructor) => {
     if (activeFilters.subject && !instructor.subjects.includes(activeFilters.subject)) return false
     if (activeFilters.gender && instructor.gender !== activeFilters.gender) return false
     if (activeFilters.ageMin && instructor.age && instructor.age < parseInt(activeFilters.ageMin)) return false

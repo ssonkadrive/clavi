@@ -12,11 +12,7 @@ interface Academy {
   certified: boolean
 }
 
-const mockData: Academy[] = [
-  { id: '1', name: '서울수학학원', location: '서울', subject: '수학', pay: 300, cms_score: 85, certified: true },
-  { id: '2', name: '강남영어학원', location: '서울', subject: '영어', pay: 250, cms_score: 78, certified: false },
-  { id: '3', name: '과학전문학원', location: '서울', subject: '과학', pay: 350, cms_score: 92, certified: true },
-]
+const mockData: Academy[] = []
 
 export default function FindAcademiesPage() {
   const [currentIndex, setCurrentIndex] = useState(0)

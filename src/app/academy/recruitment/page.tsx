@@ -11,11 +11,7 @@ interface Proposal {
   cms_score: number
 }
 
-const mockData: Proposal[] = [
-  { id: '1', instructor_name: '김수학', status: '진행중', date: '2026-07-08', cms_score: 85 },
-  { id: '2', instructor_name: '이영어', status: '진행중', date: '2026-07-07', cms_score: 78 },
-  { id: '3', instructor_name: '박과학', status: '대기', date: '2026-07-06', cms_score: 92 },
-]
+const mockData: Proposal[] = []
 
 type StatusType = '전체' | '대기' | '진행중' | '완료'
 
