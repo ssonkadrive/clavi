@@ -52,8 +52,8 @@ export default function ConditionsForm({
   useEffect(() => {
     if (initialConditions) {
       setRegion(initialConditions.regions || '')
-      setPayMin(initialConditions.pay_min || '')
-      setPayMax(initialConditions.pay_max || '')
+      setPayMin(initialConditions.pay_min ? String(initialConditions.pay_min) : '')
+      setPayMax(initialConditions.pay_max ? String(initialConditions.pay_max) : '')
       setWeekdays(initialConditions.weekdays || 'all')
       setDescription(initialConditions.description || '')
     }

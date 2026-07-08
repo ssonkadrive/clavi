@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 
-interface Message {
+interface MessageResponse {
   id: string
   sender_id: string
   message: string
@@ -12,7 +12,7 @@ interface Message {
 }
 
 interface GetMessagesResult {
-  messages: Message[]
+  messages: MessageResponse[]
   currentUserId: string
 }
 
@@ -93,7 +93,7 @@ export async function sendMessage(proposalId: string, content: string) {
         sender_id: message.sender_id,
         message: message.content,
         created_at: message.created_at,
-        sender_type: 'instructor',
+        sender_type: 'instructor' as const,
       },
     }
   } catch (error: any) {
@@ -176,7 +176,7 @@ export async function getMessages(proposalId: string) {
           sender_id: msg.sender_id,
           message: msg.content,
           created_at: msg.created_at,
-          sender_type: 'instructor',
+          sender_type: 'instructor' as const,
         })),
         currentUserId: session.userId,
       },

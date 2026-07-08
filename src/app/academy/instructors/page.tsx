@@ -1,11 +1,11 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { searchInstructors, type InstructorSearchRow } from './actions'
 import Link from 'next/link'
 
-export default function AcademyInstructorsPage() {
+function AcademyInstructorsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -195,5 +195,13 @@ export default function AcademyInstructorsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AcademyInstructorsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 py-12 px-4">로딩 중...</div>}>
+      <AcademyInstructorsContent />
+    </Suspense>
   )
 }

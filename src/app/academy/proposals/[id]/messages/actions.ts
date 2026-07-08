@@ -58,7 +58,13 @@ export async function getMessages(proposalId: string) {
 
     return {
       data: {
-        messages: messages || [],
+        messages: (messages || []).map((msg: any) => ({
+          id: msg.id,
+          sender_id: msg.sender_id,
+          content: msg.content,
+          created_at: msg.created_at,
+          sender_type: 'academy' as const,
+        })),
         currentUserId: session.userId,
       },
     }
@@ -130,7 +136,13 @@ export async function sendMessage(proposalId: string, message: string) {
     console.log('[sendMessage] 메시지 전송 성공:', newMessage?.id)
 
     return {
-      data: newMessage,
+      data: {
+        id: newMessage?.id,
+        sender_id: newMessage?.sender_id,
+        content: newMessage?.content,
+        created_at: newMessage?.created_at,
+        sender_type: 'academy' as const,
+      },
     }
   } catch (err) {
     console.error('[sendMessage] 예외:', err)

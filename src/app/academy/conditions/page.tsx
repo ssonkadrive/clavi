@@ -54,7 +54,6 @@ export default async function AcademyConditionsPage() {
   } else {
     console.log('[AcademyConditionsPage] academy_conditions 조회 성공:', {
       hasData: !!existingConditions,
-      region: existingConditions?.region,
       requiredSkillsCount: existingConditions?.required_skills?.length || 0,
     })
   }
@@ -76,7 +75,7 @@ export default async function AcademyConditionsPage() {
             userId={session.userId}
             categories={categories}
             initialRequiredSkills={initialRequiredSkills}
-            initialConditions={existingConditions}
+            initialConditions={existingConditions || undefined}
           />
         )}
       </div>
