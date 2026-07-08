@@ -96,8 +96,14 @@ export default function AcademyProfilePage() {
         .eq('user_id', user.id)
 
       if (updateError) {
-        console.error('[AcademyProfilePage] 저장 실패:', updateError)
-        setError('프로필 저장에 실패했습니다.')
+        console.error('[AcademyProfilePage] 저장 실패:', {
+          message: updateError.message,
+          code: updateError.code,
+          details: updateError.details,
+          hint: updateError.hint,
+          fullError: JSON.stringify(updateError),
+        })
+        setError(`프로필 저장에 실패했습니다. (${updateError.code || updateError.message})`)
         return
       }
 
