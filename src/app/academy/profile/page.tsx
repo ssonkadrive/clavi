@@ -16,8 +16,7 @@ export default function AcademyProfilePage() {
 
   const [academyName, setAcademyName] = useState('')
   const [region, setRegion] = useState('')
-  const [bio, setBio] = useState('')
-  const [contact, setContact] = useState('')
+  const [description, setDescription] = useState('')
 
   console.log('[AcademyProfilePage] 페이지 로드 시작')
 
@@ -39,15 +38,24 @@ export default function AcademyProfilePage() {
 
         const { data: academy } = await supabase
           .from('academies')
-          .select('academy_name, region, bio, contact')
+          .select('academy_name, region')
           .eq('user_id', user.id)
           .single()
 
         if (academy) {
           setAcademyName(academy.academy_name || '')
           setRegion(academy.region || '')
-          setBio(academy.bio || '')
-          setContact(academy.contact || '')
+        }
+
+        // academy_conditions에서 description 조회
+        const { data: conditions } = await supabase
+          .from('academy_conditions')
+          .select('description')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (conditions?.description) {
+          setDescription(conditions.description)
         }
       } catch (err) {
         console.error('[AcademyProfilePage] 로드 실패:', err)
@@ -85,15 +93,31 @@ export default function AcademyProfilePage() {
         return
       }
 
-      const { error: updateError } = await supabase
+      // 1. academies 테이블 업데이트
+      const { error: updateAcademyError } = await supabase
         .from('academies')
         .update({
           academy_name: academyName.trim(),
           region: region.trim(),
-          bio: bio.trim(),
-          contact: contact.trim(),
         })
         .eq('user_id', user.id)
+
+      if (updateAcademyError) {
+        console.error('[AcademyProfilePage] academy 저장 실패:', updateAcademyError)
+        setError('프로필 저장에 실패했습니다.')
+        return
+      }
+
+      // 2. academy_conditions 테이블 업데이트 (description)
+      const { error: updateConditionsError } = await supabase
+        .from('academy_conditions')
+        .upsert({
+          user_id: user.id,
+          description: description.trim(),
+        })
+        .eq('user_id', user.id)
+
+      const updateError = updateConditionsError
 
       if (updateError) {
         console.error('[AcademyProfilePage] 저장 실패:', {
@@ -199,37 +223,19 @@ export default function AcademyProfilePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              소개
+              학원 소개
             </label>
             {isEditing ? (
               <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 disabled={isSaving}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="학원 소개를 입력하세요"
                 rows={4}
               />
             ) : (
-              <p className="text-gray-900 whitespace-pre-wrap">{bio || '-'}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              연락처
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                disabled={isSaving}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                placeholder="예: 02-123-4567"
-              />
-            ) : (
-              <p className="text-gray-900">{contact || '-'}</p>
+              <p className="text-gray-900 whitespace-pre-wrap">{description || '-'}</p>
             )}
           </div>
 
