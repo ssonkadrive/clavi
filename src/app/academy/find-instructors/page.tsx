@@ -50,7 +50,8 @@ export default function FindInstructorsPage() {
   })
 
   // 필터링된 강사 목록 (DB에서 조회해야 함)
-  const filteredInstructors = [].filter((instructor: Instructor) => {
+  const instructors: Instructor[] = []
+  const filteredInstructors = instructors.filter(instructor => {
     if (activeFilters.subject && !instructor.subjects.includes(activeFilters.subject)) return false
     if (activeFilters.gender && instructor.gender !== activeFilters.gender) return false
     if (activeFilters.ageMin && instructor.age && instructor.age < parseInt(activeFilters.ageMin)) return false
