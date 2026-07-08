@@ -5,9 +5,6 @@ import { getSession } from '@/lib/auth/getSession'
 
 interface SearchFilters {
   selectedSkillIds: string[]
-  gender?: string
-  ageMin?: number
-  ageMax?: number
   education?: string
   experienceMin?: number
   salaryMin?: number
@@ -18,8 +15,6 @@ export interface Instructor {
   id: string
   user_id: string
   name: string
-  age?: number
-  gender?: string
   education?: string
   experience: number
   selected_skills: string[]
@@ -67,7 +62,7 @@ export async function searchInstructors(
     console.log('[searchInstructors] instructor_profiles 조회 시작')
     const { data: instructorProfiles, error: profileError } = await supabase
       .from('instructor_profiles')
-      .select('user_id, name, age, gender, education, years_of_experience, hourly_rate, certified')
+      .select('user_id, name, education, years_of_experience, hourly_rate, certified')
 
     if (profileError) {
       console.error('[searchInstructors] instructor_profiles 조회 실패:', {
@@ -121,19 +116,6 @@ export async function searchInstructors(
       const selectedSkills = conditions?.selected_skills || []
 
       // 필터 적용
-      // 성별
-      if (filters.gender && profile.gender !== filters.gender) {
-        return
-      }
-
-      // 나이
-      if (filters.ageMin && profile.age && profile.age < filters.ageMin) {
-        return
-      }
-      if (filters.ageMax && profile.age && profile.age > filters.ageMax) {
-        return
-      }
-
       // 학력
       if (filters.education && profile.education !== filters.education) {
         return
@@ -168,11 +150,9 @@ export async function searchInstructors(
       const cms = calculateCMS(selectedSkills, requiredSkills)
 
       results.push({
-        id: profile.user_id, // 임시 ID (실제로는 user_id 사용)
+        id: profile.user_id,
         user_id: profile.user_id,
         name: profile.name || '이름 없음',
-        age: profile.age,
-        gender: profile.gender,
         education: profile.education,
         experience: profile.years_of_experience || 0,
         selected_skills: selectedSkills,

@@ -16,9 +16,6 @@ interface SkillCategory {
 
 type FilterState = {
   selectedSkillIds: string[]
-  gender: string
-  ageMin: string
-  ageMax: string
   education: string
   experienceMin: string
   salaryMin: string
@@ -33,9 +30,6 @@ export default function FindInstructorsPage() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   const [filters, setFilters] = useState<FilterState>({
     selectedSkillIds: [],
-    gender: '',
-    ageMin: '',
-    ageMax: '',
     education: '',
     experienceMin: '',
     salaryMin: '',
@@ -43,9 +37,6 @@ export default function FindInstructorsPage() {
   })
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     selectedSkillIds: [],
-    gender: '',
-    ageMin: '',
-    ageMax: '',
     education: '',
     experienceMin: '',
     salaryMin: '',
@@ -101,9 +92,6 @@ export default function FindInstructorsPage() {
     try {
       const result = await searchInstructors({
         selectedSkillIds: filters.selectedSkillIds,
-        gender: filters.gender || undefined,
-        ageMin: filters.ageMin ? parseInt(filters.ageMin) : undefined,
-        ageMax: filters.ageMax ? parseInt(filters.ageMax) : undefined,
         education: filters.education || undefined,
         experienceMin: filters.experienceMin ? parseInt(filters.experienceMin) : undefined,
         salaryMin: filters.salaryMin ? parseInt(filters.salaryMin) : undefined,
@@ -131,9 +119,6 @@ export default function FindInstructorsPage() {
   const handleResetFilter = () => {
     const empty: FilterState = {
       selectedSkillIds: [],
-      gender: '',
-      ageMin: '',
-      ageMax: '',
       education: '',
       experienceMin: '',
       salaryMin: '',
@@ -205,44 +190,6 @@ export default function FindInstructorsPage() {
           {/* 선택된 스킬 반영 */}
           {skillCategories.length > 0 && (
             <div className="space-y-3">
-              {/* 성별 */}
-              <div>
-                <label className="text-xs text-gray-600">성별</label>
-                <select
-                  value={filters.gender}
-                  onChange={e => handleFilterChange('gender', e.target.value)}
-                  className="w-full px-2 py-1 border rounded text-sm"
-                >
-                  <option value="">전체</option>
-                  <option value="남성">남성</option>
-                  <option value="여성">여성</option>
-                </select>
-              </div>
-
-              {/* 나이 범위 */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-gray-600">최소 나이</label>
-                  <input
-                    type="number"
-                    value={filters.ageMin}
-                    onChange={e => handleFilterChange('ageMin', e.target.value)}
-                    placeholder="20"
-                    className="w-full px-2 py-1 border rounded text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">최대 나이</label>
-                  <input
-                    type="number"
-                    value={filters.ageMax}
-                    onChange={e => handleFilterChange('ageMax', e.target.value)}
-                    placeholder="40"
-                    className="w-full px-2 py-1 border rounded text-sm"
-                  />
-                </div>
-              </div>
-
               {/* 학력 */}
               <div>
                 <label className="text-xs text-gray-600">학력</label>
@@ -321,9 +268,8 @@ export default function FindInstructorsPage() {
           <p>
             <span className="font-semibold">적용된 필터:</span>
             {activeFilters.selectedSkillIds.length > 0 && ` 과목(${activeFilters.selectedSkillIds.length}개)`}
-            {activeFilters.gender && ` · 성별: ${activeFilters.gender}`}
-            {activeFilters.ageMin && ` · 최소 나이: ${activeFilters.ageMin}세`}
-            {activeFilters.ageMax && ` · 최대 나이: ${activeFilters.ageMax}세`}
+            {activeFilters.education && ` · 학력: ${activeFilters.education}`}
+            {activeFilters.experienceMin && ` · 최소 경력: ${activeFilters.experienceMin}년`}
           </p>
         </div>
       )}
@@ -337,7 +283,7 @@ export default function FindInstructorsPage() {
                 <div>
                   <p className="font-bold text-lg">{instructor.name}</p>
                   <p className="text-xs text-gray-500">
-                    {instructor.age}세 · {instructor.gender} · {instructor.education}
+                    {instructor.education}
                   </p>
                 </div>
                 {instructor.certified && (
