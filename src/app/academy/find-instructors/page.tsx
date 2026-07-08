@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { searchInstructors, type Instructor } from './actions'
+import { searchInstructors, submitInstructorProposal, type Instructor } from './actions'
 import SkillCheckboxes from '@/components/SkillCheckboxes'
 
 interface SkillCategory {
@@ -40,6 +40,8 @@ export default function FindInstructorsPage() {
   const [results, setResults] = useState<Instructor[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
+  const [proposingInstructor, setProposingInstructor] = useState<string | null>(null)
+  const [proposedInstructors, setProposedInstructors] = useState<Set<string>>(new Set())
 
   // 1. 초기 로드: skill_categories 조회
   useEffect(() => {
@@ -125,6 +127,30 @@ export default function FindInstructorsPage() {
     return skillIds
       .map(id => skillCategories.find(c => c.id === id)?.name)
       .filter(Boolean) as string[]
+  }
+
+  // 제안 버튼 클릭 핸들러
+  const handleProposal = async (instructorId: string, instructorName: string) => {
+    setProposingInstructor(instructorId)
+
+    try {
+      const result = await submitInstructorProposal(instructorId)
+
+      if (result.success) {
+        console.log('[FindInstructorsPage] 제안 성공:', instructorName)
+        // 제안 완료된 강사를 추가
+        setProposedInstructors(prev => new Set([...prev, instructorId]))
+        alert(`${instructorName}에게 제안했습니다!`)
+      } else {
+        console.error('[FindInstructorsPage] 제안 실패:', result.error)
+        alert(`제안 실패: ${result.error}`)
+      }
+    } catch (err) {
+      console.error('[FindInstructorsPage] 제안 중 오류:', err)
+      alert('제안 중 오류가 발생했습니다.')
+    } finally {
+      setProposingInstructor(null)
+    }
   }
 
   return (
@@ -268,12 +294,19 @@ export default function FindInstructorsPage() {
                   <p className="text-xs text-gray-500">매칭 점수</p>
                   <p className="text-2xl font-bold text-blue-600">{instructor.cms_score}%</p>
                 </div>
-                <button
-                  onClick={() => alert(`${instructor.name}에게 제안했습니다!`)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold"
-                >
-                  ❤️ 제안
-                </button>
+                {proposedInstructors.has(instructor.user_id) ? (
+                  <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold">
+                    ✓ 제안 완료
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleProposal(instructor.user_id, instructor.name)}
+                    disabled={proposingInstructor === instructor.user_id}
+                    className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+                  >
+                    {proposingInstructor === instructor.user_id ? '처리 중...' : '❤️ 제안'}
+                  </button>
+                )}
               </div>
             </div>
           ))

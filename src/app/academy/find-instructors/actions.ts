@@ -159,3 +159,79 @@ function calculateCMS(instructorSkills: string[], requiredSkills: string[]): num
   const matchCount = instructorSkills.filter(skill => requiredSkills.includes(skill)).length
   return Math.round((matchCount / requiredSkills.length) * 100)
 }
+
+// 강사에게 면접 제안하기
+export async function submitInstructorProposal(
+  instructorUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  console.log('[submitInstructorProposal] 면접 제안 시작:', instructorUserId)
+
+  try {
+    // 1. 세션 확인
+    const session = await getSession()
+    if (!session || session.role !== 'academy') {
+      console.error('[submitInstructorProposal] 권한 없음')
+      return { success: false, error: '원장 계정으로 로그인해주세요.' }
+    }
+
+    const supabase = await createClient()
+
+    // 2. 이미 pending 상태의 제안이 있는지 확인
+    console.log('[submitInstructorProposal] 기존 pending 제안 확인')
+    const { data: existingProposal, error: checkError } = await supabase
+      .from('interview_proposals')
+      .select('id')
+      .eq('academy_user_id', session.userId)
+      .eq('instructor_user_id', instructorUserId)
+      .eq('status', 'pending')
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('[submitInstructorProposal] 확인 중 에러:', checkError.message)
+      return { success: false, error: '제안 확인 중 오류 발생' }
+    }
+
+    if (existingProposal) {
+      console.log('[submitInstructorProposal] 이미 pending 제안 존재')
+      return { success: false, error: '이미 이 강사에게 제안했습니다.' }
+    }
+
+    // 3. interview_proposals에 insert
+    const now = new Date()
+    const proposedDate = now.toISOString().split('T')[0] // YYYY-MM-DD
+    const proposedTime = now.toTimeString().split(' ')[0] // HH:MM:SS
+
+    console.log('[submitInstructorProposal] 새 제안 등록:', {
+      proposedDate,
+      proposedTime,
+    })
+
+    const { data: result, error: insertError } = await supabase
+      .from('interview_proposals')
+      .insert({
+        academy_user_id: session.userId,
+        instructor_user_id: instructorUserId,
+        proposed_date: proposedDate,
+        proposed_time: proposedTime,
+        message: '강사찾기에서 제안',
+        status: 'pending',
+      })
+      .select()
+
+    if (insertError) {
+      console.error('[submitInstructorProposal] insert 실패:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+      })
+      return { success: false, error: `제안 등록 실패: ${insertError.message}` }
+    }
+
+    console.log('[submitInstructorProposal] 성공:', result)
+    return { success: true }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error('[submitInstructorProposal] 예외:', errorMessage)
+    return { success: false, error: `예외 발생: ${errorMessage}` }
+  }
+}
