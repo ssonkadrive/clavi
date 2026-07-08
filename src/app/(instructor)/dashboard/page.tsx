@@ -1,5 +1,4 @@
 import { getInstructorDashboardData } from './actions'
-import Link from 'next/link'
 
 export default async function InstructorDashboardPage() {
   const result = await getInstructorDashboardData()
@@ -46,21 +45,6 @@ export default async function InstructorDashboardPage() {
         </div>
       </div>
 
-      {/* CTA 버튼 2개 */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/find-academies"
-          className="bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-lg font-bold text-center transition-colors shadow-md"
-        >
-          🔍 학원찾기
-        </Link>
-        <Link
-          href="/matching"
-          className="bg-gray-700 hover:bg-gray-800 text-white py-4 px-4 rounded-lg font-bold text-center transition-colors shadow-md"
-        >
-          📋 매칭현황
-        </Link>
-      </div>
     </div>
   )
 }

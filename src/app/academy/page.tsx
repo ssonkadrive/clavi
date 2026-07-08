@@ -1,5 +1,4 @@
 import { getAcademyDashboardData } from './dashboard/actions'
-import Link from 'next/link'
 
 export default async function AcademyHomePage() {
   const result = await getAcademyDashboardData()
@@ -43,22 +42,6 @@ export default async function AcademyHomePage() {
             {stats.proposalsAccepted}
           </p>
         </div>
-      </div>
-
-      {/* CTA 버튼 2개 */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/academy/find-instructors"
-          className="bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-lg font-bold text-center transition-colors shadow-md"
-        >
-          🔍 강사찾기
-        </Link>
-        <Link
-          href="/academy/recruitment"
-          className="bg-gray-700 hover:bg-gray-800 text-white py-4 px-4 rounded-lg font-bold text-center transition-colors shadow-md"
-        >
-          📋 채용현황
-        </Link>
       </div>
 
       {/* 최근 활동 미리보기 */}
