@@ -98,6 +98,7 @@ export default function NotificationList({ initialNotifications }: NotificationL
 
     try {
       const result = await deleteNotification(notificationId)
+      console.log('[NotificationList] deleteNotification 결과:', result)
 
       if (result.success) {
         // UI에서 제거
