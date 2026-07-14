@@ -91,7 +91,13 @@ export default function EducationTab() {
       if (!userId) throw new Error('userId가 없습니다')
 
       console.log('[EducationTab] 저장 시작, userId:', userId)
-      console.log('[EducationTab] 저장할 데이터:', education)
+      console.log('[EducationTab] 저장할 데이터:', JSON.stringify(education, null, 2))
+      console.log('[EducationTab] 데이터 타입:', {
+        school_name: typeof education.school_name,
+        degree: typeof education.degree,
+        major: typeof education.major,
+        graduation_year: typeof education.graduation_year,
+      })
 
       // 먼저 update 시도 (기존 행 업데이트)
       const { data: updateData, error: updateError, status: updateStatus } = await supabase
@@ -134,6 +140,27 @@ export default function EducationTab() {
       }
 
       console.log('[EducationTab] 저장 완료')
+
+      // 저장 후 다시 조회하여 실제로 뭐가 저장되었는지 확인
+      console.log('[EducationTab] 저장 후 검증 시작...')
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('instructor_profiles')
+        .select('education')
+        .eq('user_id', userId)
+        .single()
+
+      if (verifyError) {
+        console.error('[EducationTab] 검증 조회 실패:', verifyError)
+      } else {
+        console.log('[EducationTab] 저장된 데이터 검증:', JSON.stringify(verifyData, null, 2))
+        console.log('[EducationTab] 각 필드 확인:', {
+          school_name: verifyData?.education?.school_name,
+          degree: verifyData?.education?.degree,
+          major: verifyData?.education?.major,
+          graduation_year: verifyData?.education?.graduation_year,
+        })
+      }
+
       alert('학력이 저장되었습니다.')
 
       // 저장 후 재로드하여 상태 확인

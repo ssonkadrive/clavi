@@ -146,6 +146,22 @@ export default function SkillsTab() {
       }
 
       console.log('[SkillsTab] 저장 완료')
+
+      // 저장 후 다시 조회하여 실제로 뭐가 저장되었는지 확인
+      console.log('[SkillsTab] 저장 후 검증 시작...')
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('instructor_conditions')
+        .select('selected_skills')
+        .eq('user_id', userId)
+        .single()
+
+      if (verifyError) {
+        console.error('[SkillsTab] 검증 조회 실패:', verifyError)
+      } else {
+        console.log('[SkillsTab] 저장된 역량 검증:', verifyData?.selected_skills)
+        console.log('[SkillsTab] 저장된 역량 개수:', verifyData?.selected_skills?.length || 0)
+      }
+
       alert('역량이 저장되었습니다.')
     } catch (err) {
       const message = err instanceof Error ? err.message : '알 수 없는 에러'
