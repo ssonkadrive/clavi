@@ -55,3 +55,34 @@ export async function markNotificationAsRead(
     unreadCount: unreadCount || 0,
   }
 }
+
+export async function deleteNotification(
+  notificationId: string
+): Promise<{ success?: boolean; error?: string }> {
+  console.log('[deleteNotification] 시작:', notificationId)
+
+  // 1. 세션 확인
+  const session = await getSession()
+  if (!session) {
+    console.error('[deleteNotification] 세션 없음')
+    return { error: '로그인이 필요합니다.' }
+  }
+
+  const supabase = await createClient()
+
+  // 2. 알림 삭제 (자신이 받은 알림만 삭제 가능)
+  console.log('[deleteNotification] 알림 삭제 시작')
+  const { error: deleteError } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('recipient_id', session.userId)
+
+  if (deleteError) {
+    console.error('[deleteNotification] 삭제 실패:', deleteError.message)
+    return { error: '알림 삭제에 실패했습니다.' }
+  }
+
+  console.log('[deleteNotification] 알림 삭제 성공')
+  return { success: true }
+}

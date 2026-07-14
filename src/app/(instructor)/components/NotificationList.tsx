@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { markNotificationAsRead } from '@/app/actions/notifications'
+import { markNotificationAsRead, deleteNotification } from '@/app/actions/notifications'
 
 interface NotificationItem {
   id: string
@@ -93,6 +93,27 @@ export default function NotificationList({ initialNotifications }: NotificationL
     }
   }
 
+  const handleDelete = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation()
+    console.log('[NotificationList] 삭제 시작:', notificationId)
+
+    try {
+      const result = await deleteNotification(notificationId)
+
+      if (result.success) {
+        // UI에서 제거
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+        console.log('[NotificationList] 알림 삭제 성공')
+      } else {
+        console.error('[NotificationList] 알림 삭제 실패:', result.error)
+        alert('알림 삭제에 실패했습니다.')
+      }
+    } catch (err) {
+      console.error('[NotificationList] 삭제 중 오류:', err)
+      alert('알림 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
   if (notifications.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -130,9 +151,18 @@ export default function NotificationList({ initialNotifications }: NotificationL
                     </div>
                   </div>
                 </div>
-                <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-                  {formatRelativeTime(notification.createdAt)}
-                </span>
+                <div className="flex items-center gap-2 ml-4">
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    {formatRelativeTime(notification.createdAt)}
+                  </span>
+                  <button
+                    onClick={(e) => handleDelete(e, notification.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    title="삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* 메시지 */}
