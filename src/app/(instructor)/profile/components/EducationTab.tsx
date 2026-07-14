@@ -10,13 +10,15 @@ interface Education {
   graduation_year: number
 }
 
+const DEFAULT_EDUCATION: Education = {
+  school_name: '',
+  degree: '대졸',
+  major: '',
+  graduation_year: new Date().getFullYear(),
+}
+
 export default function EducationTab() {
-  const [education, setEducation] = useState<Education>({
-    school_name: '',
-    degree: '대졸',
-    major: '',
-    graduation_year: new Date().getFullYear(),
-  })
+  const [education, setEducation] = useState<Education>(DEFAULT_EDUCATION)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
@@ -28,19 +30,36 @@ export default function EducationTab() {
   const loadEducation = async () => {
     try {
       const { data: authData } = await supabase.auth.getUser()
-      if (!authData.user) return
+      if (!authData.user) {
+        setEducation(DEFAULT_EDUCATION)
+        return
+      }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('instructor_profiles')
         .select('education')
         .eq('user_id', authData.user.id)
         .single()
 
-      if (data?.education) {
-        setEducation(data.education)
+      if (error) {
+        console.error('[EducationTab] DB 조회 에러:', error)
+        // 행이 없으면 기본값 사용
+        setEducation(DEFAULT_EDUCATION)
+      } else if (data?.education) {
+        // 로드된 데이터 확인 및 안전하게 설정
+        const loaded = data.education as Partial<Education>
+        setEducation({
+          school_name: loaded.school_name ?? '',
+          degree: loaded.degree ?? '대졸',
+          major: loaded.major ?? '',
+          graduation_year: typeof loaded.graduation_year === 'number' ? loaded.graduation_year : new Date().getFullYear(),
+        })
+      } else {
+        setEducation(DEFAULT_EDUCATION)
       }
     } catch (err) {
-      console.error('학력 로드 실패:', err)
+      console.error('[EducationTab] 학력 로드 실패:', err)
+      setEducation(DEFAULT_EDUCATION)
     } finally {
       setIsLoading(false)
     }
@@ -50,18 +69,39 @@ export default function EducationTab() {
     setIsSaving(true)
     try {
       const { data: authData } = await supabase.auth.getUser()
-      if (!authData.user) return
+      if (!authData.user) throw new Error('사용자 정보 없음')
 
-      const { error } = await supabase
+      // 데이터 유효성 확인
+      if (!education.school_name.trim()) {
+        alert('학교명을 입력하세요.')
+        setIsSaving(false)
+        return
+      }
+
+      // 먼저 update 시도
+      const { error: updateError } = await supabase
         .from('instructor_profiles')
         .update({ education })
         .eq('user_id', authData.user.id)
 
-      if (error) throw error
+      if (updateError) {
+        // 행이 없으면 insert 시도
+        if (updateError.code === 'PGRST116' || updateError.code === 'NODATA') {
+          const { error: insertError } = await supabase
+            .from('instructor_profiles')
+            .insert({ user_id: authData.user.id, education })
+
+          if (insertError) throw insertError
+        } else {
+          throw updateError
+        }
+      }
+
       alert('학력이 저장되었습니다.')
     } catch (err) {
-      console.error('학력 저장 실패:', err)
-      alert('저장 실패')
+      const message = err instanceof Error ? err.message : '알 수 없는 에러'
+      console.error('[EducationTab] 저장 실패:', message)
+      alert('저장 실패: ' + message)
     } finally {
       setIsSaving(false)
     }
@@ -120,13 +160,14 @@ export default function EducationTab() {
         <label className="block text-sm font-medium text-gray-700 mb-2">졸업년도</label>
         <input
           type="number"
-          value={education.graduation_year}
-          onChange={(e) =>
+          value={education.graduation_year || new Date().getFullYear()}
+          onChange={(e) => {
+            const year = e.target.value ? parseInt(e.target.value) : new Date().getFullYear()
             setEducation({
               ...education,
-              graduation_year: parseInt(e.target.value),
+              graduation_year: isNaN(year) ? new Date().getFullYear() : year,
             })
-          }
+          }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           min="1950"
           max={new Date().getFullYear()}
