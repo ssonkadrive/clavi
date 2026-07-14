@@ -55,20 +55,33 @@ export default function EducationTab() {
         // 행이 없으면 기본값 사용
         setEducation(DEFAULT_EDUCATION)
       } else if (data?.education) {
-        // 로드된 데이터 상세 로깅
-        console.log('[EducationTab] 로드된 education 원본:', JSON.stringify(data.education, null, 2))
+        console.log('[EducationTab] 로드된 education 원본:', data.education)
         console.log('[EducationTab] education 타입:', typeof data.education)
-        console.log('[EducationTab] education은 객체인가:', data.education !== null && typeof data.education === 'object')
 
-        // 로드된 데이터 확인 및 안전하게 설정
-        const loaded = data.education as Partial<Education>
-        console.log('[EducationTab] 파싱된 필드들:', {
-          school_name: loaded.school_name,
-          degree: loaded.degree,
-          major: loaded.major,
-          graduation_year: loaded.graduation_year,
+        // education이 JSON 문자열일 수 있으므로 파싱
+        let parsed: any = data.education
+        if (typeof parsed === 'string') {
+          console.log('[EducationTab] education이 JSON 문자열입니다. 파싱 중...')
+          try {
+            parsed = JSON.parse(parsed)
+            console.log('[EducationTab] 파싱 완료:', parsed)
+          } catch (parseErr) {
+            console.error('[EducationTab] JSON 파싱 실패:', parseErr)
+            setEducation(DEFAULT_EDUCATION)
+            return
+          }
+        }
+
+        console.log('[EducationTab] 파싱된 객체:', parsed)
+        console.log('[EducationTab] 각 필드값:', {
+          school_name: parsed?.school_name,
+          degree: parsed?.degree,
+          major: parsed?.major,
+          graduation_year: parsed?.graduation_year,
         })
 
+        // 파싱된 데이터 설정
+        const loaded = parsed as Partial<Education>
         setEducation({
           school_name: loaded.school_name ?? '',
           degree: loaded.degree ?? '대졸',
