@@ -323,19 +323,42 @@ export default function SkillsTab() {
     )
   }
 
-  // 축약된 상태: 선택된 역량 개수만 표시
+  // 축약된 상태: 선택된 역량 리스트 표시
   if (!isEditing) {
+    const selectedSkillNames = selectedSkills
+      .map((skillId) => {
+        const skill = tree.flatMap((node) => {
+          const flatten = (n: SkillNode): SkillNode[] => [n, ...n.children.flatMap(flatten)]
+          return flatten(n)
+        }).find((s) => s.id === skillId)
+        return skill?.name || ''
+      })
+      .filter((name) => name !== '')
+
     return (
-      <div className="flex items-center justify-between">
-        <p className="text-lg font-semibold text-gray-900">
-          현재 선택한 역량: <span className="text-blue-600">{selectedSkills.length}개</span>
-        </p>
-        <button
-          onClick={() => setIsEditing(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          수정하기
-        </button>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-lg font-semibold text-gray-900">
+            현재 선택한 역량: <span className="text-blue-600">{selectedSkills.length}개</span>
+          </p>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            수정하기
+          </button>
+        </div>
+
+        {selectedSkillNames.length > 0 && (
+          <ul className="space-y-2">
+            {selectedSkillNames.map((name, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-gray-700">
+                <span className="text-blue-600 mt-0.5">•</span>
+                <span>{name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     )
   }

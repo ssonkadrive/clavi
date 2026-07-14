@@ -112,7 +112,7 @@ export default function AcademyProfileTab() {
       <div className="border-t pt-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            현재 선택한 역량: {selectedSkills.length}개
+            현재 선택한 역량: <span className="text-blue-600">{selectedSkills.length}개</span>
           </h3>
           <button
             onClick={() => setIsEditing(!isEditing)}
@@ -121,6 +121,22 @@ export default function AcademyProfileTab() {
             {isEditing ? '취소' : '수정하기'}
           </button>
         </div>
+
+        {!isEditing && selectedSkills.length > 0 && (
+          <div className="mb-4">
+            <ul className="space-y-2">
+              {selectedSkills.map((skillId) => {
+                const skillName = allSkills.find((s) => s.id === skillId)?.name || '알 수 없는 역량'
+                return (
+                  <li key={skillId} className="flex items-start gap-2 text-gray-700">
+                    <span className="text-blue-600 mt-0.5">•</span>
+                    <span>{skillName}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
 
         {isEditing ? (
           <AcademySkillsTree
