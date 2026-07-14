@@ -3,14 +3,23 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-interface Skill {
+interface SkillCategory {
   id: string
+  parent_id: string | null
+  level?: 'major' | 'middle' | 'minor'
   name: string
+  display_order: number
+  is_active: boolean
+}
+
+interface SkillNode extends SkillCategory {
+  children: SkillNode[]
 }
 
 export default function SkillsTab() {
-  const [skills, setSkills] = useState<Skill[]>([])
+  const [tree, setTree] = useState<SkillNode[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +28,36 @@ export default function SkillsTab() {
   useEffect(() => {
     loadSkills()
   }, [])
+
+  // 계층 구조로 변환
+  const buildTree = (items: SkillCategory[]): SkillNode[] => {
+    const map = new Map<string, SkillNode>()
+
+    items.forEach(item => {
+      map.set(item.id, { ...item, children: [] })
+    })
+
+    const roots: SkillNode[] = []
+    items.forEach(item => {
+      const node = map.get(item.id)!
+      if (item.parent_id) {
+        const parent = map.get(item.parent_id)
+        if (parent) {
+          parent.children.push(node)
+        }
+      } else {
+        roots.push(node)
+      }
+    })
+
+    const sort = (nodes: SkillNode[]) => {
+      nodes.sort((a, b) => a.display_order - b.display_order)
+      nodes.forEach(node => sort(node.children))
+    }
+    sort(roots)
+
+    return roots
+  }
 
   const loadSkills = async () => {
     try {
@@ -36,11 +75,10 @@ export default function SkillsTab() {
 
       console.log('[SkillsTab] 역량 로드 시작, userId:', userId, '타입:', typeof userId)
 
-      // 역량 조회 (RLS 권한 확인)
+      // 모든 활성 역량 조회 (계층 구조 유지)
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_categories')
-        .select('id, name')
-        .is('parent_id', null)
+        .select('id, parent_id, level, name, display_order, is_active')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
 
@@ -55,7 +93,10 @@ export default function SkillsTab() {
       }
 
       console.log('[SkillsTab] 조회 완료:', skillsData?.length || 0, '개')
-      setSkills(skillsData || [])
+
+      // 트리 구조로 변환
+      const treeData = buildTree(skillsData || [])
+      setTree(treeData)
 
       // 선택된 역량 조회 (instructor_conditions이 없을 수 있음)
       try {
@@ -66,8 +107,23 @@ export default function SkillsTab() {
           .single()
 
         if (!condError) {
-          setSelectedSkills(condData?.selected_skills || [])
-          console.log('[SkillsTab] 선택된 역량:', condData?.selected_skills || [])
+          const selectedIds = condData?.selected_skills || []
+          setSelectedSkills(selectedIds)
+          console.log('[SkillsTab] 선택된 역량:', selectedIds)
+
+          // 선택된 항목의 부모들을 펼치기
+          const expandedSet = new Set<string>()
+          selectedIds.forEach((selectedId: string) => {
+            let currentId: string | null = selectedId
+            while (currentId) {
+              const category = (skillsData || []).find(c => c.id === currentId)
+              if (!category || !category.parent_id) break
+
+              expandedSet.add(category.parent_id)
+              currentId = category.parent_id
+            }
+          })
+          setExpandedIds(expandedSet)
         } else if (condError.code === 'PGRST116') {
           console.log('[SkillsTab] instructor_conditions 데이터 없음 (초기 사용자)')
           setSelectedSkills([])
@@ -88,11 +144,73 @@ export default function SkillsTab() {
     }
   }
 
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedIds)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedIds(newExpanded)
+  }
+
   const handleSkillChange = (skillId: string) => {
     setSelectedSkills((prev) =>
       prev.includes(skillId)
         ? prev.filter((id) => id !== skillId)
         : [...prev, skillId]
+    )
+  }
+
+  const renderNode = (node: SkillNode, depth: number): React.ReactNode => {
+    const hasChildren = node.children.length > 0
+    const isExpanded = expandedIds.has(node.id)
+    const isSelected = selectedSkills.includes(node.id)
+
+    const depthClass = depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'
+    const depthColor = depth === 0 ? 'text-gray-900' : depth === 1 ? 'text-gray-800' : 'text-gray-700'
+
+    return (
+      <div key={node.id} style={{ marginLeft: `${depth * 20}px` }} className="mb-2">
+        <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+          {/* 펼치기/접기 버튼 */}
+          {hasChildren ? (
+            <button
+              onClick={() => toggleExpanded(node.id)}
+              className="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-900"
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+          ) : (
+            <div className="w-5"></div>
+          )}
+
+          {/* 체크박스 */}
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => handleSkillChange(node.id)}
+            className="w-4 h-4 text-blue-600 rounded"
+          />
+
+          {/* 레이블 */}
+          <span className={`flex-1 text-sm ${depthClass} ${depthColor}`}>{node.name}</span>
+
+          {/* 레벨 배지 */}
+          {node.level && (
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+              {node.level === 'major' ? '대' : node.level === 'middle' ? '중' : '소'}
+            </span>
+          )}
+        </div>
+
+        {/* 자식 노드 */}
+        {isExpanded && hasChildren && (
+          <div className="mt-1">
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -195,7 +313,7 @@ export default function SkillsTab() {
     )
   }
 
-  if (skills.length === 0) {
+  if (tree.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-600">역량이 없습니다.</p>
@@ -205,23 +323,15 @@ export default function SkillsTab() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-600">보유한 역량을 선택하세요</p>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">보유한 역량을 선택하세요</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          선택된 역량: <span className="font-semibold text-blue-600">{selectedSkills.length}개</span>
+        </p>
+      </div>
 
-      <div className="space-y-3">
-        {skills.map((skill) => (
-          <label
-            key={skill.id}
-            className="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
-          >
-            <input
-              type="checkbox"
-              checked={selectedSkills.includes(skill.id)}
-              onChange={() => handleSkillChange(skill.id)}
-              className="w-5 h-5 text-blue-600 rounded"
-            />
-            <span className="ml-3 text-gray-900">{skill.name}</span>
-          </label>
-        ))}
+      <div className="space-y-1 p-4 bg-white border border-gray-200 rounded-lg">
+        {tree.map((node) => renderNode(node, 0))}
       </div>
 
       <button
