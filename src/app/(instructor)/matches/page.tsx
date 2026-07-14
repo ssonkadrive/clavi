@@ -235,7 +235,6 @@ export default async function MatchesPage() {
             {matches.map((academy) => {
               const strengthMessage = generateStrengthMessage(
                 selectedSkills,
-                academy.required_skills,
                 academy.skillNames
               )
               return (

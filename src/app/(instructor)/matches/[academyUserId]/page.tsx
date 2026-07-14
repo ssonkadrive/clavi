@@ -193,16 +193,12 @@ export default async function AcademyDetailPage({
               </div>
             )}
 
-            {/* 강점 메시지 */}
+            {/* 역량 메시지 (학원 조건 절대 노출 금지) */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">당신의 강점</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">당신의 역량</h3>
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
                 <p className="text-sm text-blue-900 font-medium">
-                  {generateStrengthMessage(
-                    selectedSkills,
-                    conditionsData?.required_skills || [],
-                    skillNames
-                  )}
+                  {generateStrengthMessage(selectedSkills, skillNames)}
                 </p>
               </div>
             </div>

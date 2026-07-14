@@ -1,46 +1,54 @@
-// 강사 화면용: CMS 점수 대신 강점 문구 생성
-// 가중치가 높은 스킬 위주로 2~3개의 강점을 선택해 표시
+// 강사 화면용: 자신의 역량만 표시 (학원 조건 절대 노출 금지)
+// CMS 원칙: 강사는 자신의 역량만 봄, 학원의 조건 모름
 
 export interface WeightedSkill {
   skill_id: string
   weight: number
 }
 
+/**
+ * 강사의 보유 역량만 표시 (학원 조건과 무관)
+ * @param instructorSkills 강사의 선택된 역량 ID 배열
+ * @param skillNames 역량 ID → 역량 이름 매핑
+ * @returns 강사 역량 표시 문구
+ */
 export function generateStrengthMessage(
+  instructorSkills: string[],
+  skillNames: Record<string, string>
+): string {
+  // 보유한 역량이 없으면 기본 문구
+  if (!instructorSkills || instructorSkills.length === 0) {
+    return '역량을 선택하면 여기에 표시됩니다'
+  }
+
+  // 역량 이름 변환
+  const skillNames_list = instructorSkills
+    .map(skillId => skillNames[skillId] || '알 수 없는 역량')
+    .filter(name => name !== '알 수 없는 역량')
+
+  // 표시할 역량이 없으면 기본 문구
+  if (skillNames_list.length === 0) {
+    return '역량을 선택하면 여기에 표시됩니다'
+  }
+
+  // 역량 목록 생성 (최대 3개)
+  const displaySkills = skillNames_list.slice(0, 3)
+  const skillsList = displaySkills.join(', ')
+
+  // "당신의 역량" 문구로 통일 (학원 조건 노출 금지)
+  return `당신의 역량: ${skillsList}`
+}
+
+/**
+ * @deprecated 학원 조건과의 매칭으로 강점을 표시하는 것은 CMS 원칙 위배
+ * 강사는 학원의 조건을 절대 알면 안 됨
+ */
+export function generateStrengthMessage_DEPRECATED(
   instructorSkills: string[],
   requiredSkillsWithWeight: WeightedSkill[],
   skillNames: Record<string, string>
 ): string {
-  // 1단계: 강사가 보유한 스킬 중 학원이 요구한 스킬만 필터링
-  const matchedSkills = requiredSkillsWithWeight.filter(req =>
-    instructorSkills.includes(req.skill_id)
-  )
-
-  // 매칭된 스킬이 없으면 기본 문구
-  if (matchedSkills.length === 0) {
-    return '이 학원과 함께 성장할 좋은 기회예요'
-  }
-
-  // 2단계: 가중치 높은 순서로 정렬
-  const sortedSkills = matchedSkills.sort((a, b) => b.weight - a.weight)
-
-  // 3단계: 상위 2~3개 선택
-  const topSkillsCount = Math.min(3, sortedSkills.length)
-  const topSkills = sortedSkills
-    .slice(0, topSkillsCount)
-    .map(s => skillNames[s.skill_id] || '알 수 없는 스킬')
-
-  // 4단계: 문구 생성 (조사 없는 형식)
-  const skillsList = topSkills.join(', ')
-
-  if (matchedSkills.length === requiredSkillsWithWeight.length) {
-    // 모든 스킬 보유
-    return `당신의 강점: ${skillsList} 🎯`
-  } else if (matchedSkills.length >= 2) {
-    // 2개 이상 보유
-    return `당신의 강점: ${skillsList}`
-  } else {
-    // 1개만 보유
-    return `당신의 강점: ${skillsList}`
-  }
+  // 이 함수는 사용하지 마세요
+  // generateStrengthMessage를 사용하세요
+  return generateStrengthMessage(instructorSkills, skillNames)
 }
