@@ -29,13 +29,18 @@ export default function SkillsTab() {
         throw new Error('사용자 정보를 가져올 수 없습니다')
       }
 
-      console.log('[SkillsTab] 역량 로드 시작, userId:', authData.user.id)
+      const userId = authData.user.id
+      if (!userId) {
+        throw new Error('userId가 없습니다')
+      }
+
+      console.log('[SkillsTab] 역량 로드 시작, userId:', userId, '타입:', typeof userId)
 
       // 역량 조회 (RLS 권한 확인)
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_categories')
         .select('id, name')
-        .eq('parent_id', null)
+        .is('parent_id', null)
         .eq('is_active', true)
         .order('display_order', { ascending: true })
 
@@ -57,7 +62,7 @@ export default function SkillsTab() {
         const { data: condData, error: condError } = await supabase
           .from('instructor_conditions')
           .select('selected_skills')
-          .eq('user_id', authData.user.id)
+          .eq('user_id', userId)
           .single()
 
         if (!condError) {
@@ -97,14 +102,17 @@ export default function SkillsTab() {
       const { data: authData } = await supabase.auth.getUser()
       if (!authData.user) throw new Error('사용자 정보 없음')
 
-      console.log('[SkillsTab] 저장 시작, userId:', authData.user.id)
+      const userId = authData.user.id
+      if (!userId) throw new Error('userId가 없습니다')
+
+      console.log('[SkillsTab] 저장 시작, userId:', userId)
       console.log('[SkillsTab] 저장할 역량:', selectedSkills)
 
       // 먼저 update 시도
       const { error: updateError, status: updateStatus } = await supabase
         .from('instructor_conditions')
         .update({ selected_skills: selectedSkills })
-        .eq('user_id', authData.user.id)
+        .eq('user_id', userId)
 
       console.log('[SkillsTab] UPDATE 결과:', {
         status: updateStatus,
@@ -125,7 +133,7 @@ export default function SkillsTab() {
 
           const { error: insertError } = await supabase
             .from('instructor_conditions')
-            .insert({ user_id: authData.user.id, selected_skills: selectedSkills })
+            .insert({ user_id: userId, selected_skills: selectedSkills })
 
           console.log('[SkillsTab] INSERT 결과:', {
             error: insertError,

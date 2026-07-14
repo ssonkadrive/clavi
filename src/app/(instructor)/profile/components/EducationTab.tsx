@@ -35,10 +35,19 @@ export default function EducationTab() {
         return
       }
 
+      const userId = authData.user.id
+      if (!userId) {
+        console.error('[EducationTab] userId가 없습니다')
+        setEducation(DEFAULT_EDUCATION)
+        return
+      }
+
+      console.log('[EducationTab] 학력 로드 시작, userId:', userId, '타입:', typeof userId)
+
       const { data, error } = await supabase
         .from('instructor_profiles')
         .select('education')
-        .eq('user_id', authData.user.id)
+        .eq('user_id', userId)
         .single()
 
       if (error) {
@@ -78,14 +87,17 @@ export default function EducationTab() {
       const { data: authData } = await supabase.auth.getUser()
       if (!authData.user) throw new Error('사용자 정보 없음')
 
-      console.log('[EducationTab] 저장 시작, userId:', authData.user.id)
+      const userId = authData.user.id
+      if (!userId) throw new Error('userId가 없습니다')
+
+      console.log('[EducationTab] 저장 시작, userId:', userId)
       console.log('[EducationTab] 저장할 데이터:', education)
 
       // 먼저 update 시도 (기존 행 업데이트)
       const { data: updateData, error: updateError, status: updateStatus } = await supabase
         .from('instructor_profiles')
         .update({ education })
-        .eq('user_id', authData.user.id)
+        .eq('user_id', userId)
 
       console.log('[EducationTab] UPDATE 결과:', {
         status: updateStatus,
@@ -108,7 +120,7 @@ export default function EducationTab() {
 
           const { data: insertData, error: insertError } = await supabase
             .from('instructor_profiles')
-            .insert({ user_id: authData.user.id, education })
+            .insert({ user_id: userId, education })
 
           console.log('[EducationTab] INSERT 결과:', {
             data: insertData,
