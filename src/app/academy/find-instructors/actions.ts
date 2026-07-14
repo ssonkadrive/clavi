@@ -119,7 +119,7 @@ export async function searchInstructors(
       }
 
       // CMS 점수 계산
-      const cms = calculateCMS(selectedSkills, requiredSkills)
+      const cms = calculateWeightedCMS(selectedSkills, requiredSkills)
 
       results.push({
         id: profile.user_id,
@@ -153,11 +153,24 @@ export async function searchInstructors(
   }
 }
 
-// CMS 점수 계산 함수
-function calculateCMS(instructorSkills: string[], requiredSkills: string[]): number {
+// CMS 점수 계산 함수 (가중치 기반)
+function calculateWeightedCMS(
+  instructorSkills: string[],
+  requiredSkills: Array<{ skill_id: string; weight: number }>
+): number {
   if (requiredSkills.length === 0) return 0
-  const matchCount = instructorSkills.filter(skill => requiredSkills.includes(skill)).length
-  return Math.round((matchCount / requiredSkills.length) * 100)
+
+  // 전체 가중치 합 계산
+  const totalWeight = requiredSkills.reduce((sum, s) => sum + s.weight, 0)
+  if (totalWeight === 0) return 0
+
+  // 강사가 보유한 스킬의 가중치 합 계산
+  const matchedWeight = requiredSkills.reduce((sum, req) => {
+    return instructorSkills.includes(req.skill_id) ? sum + req.weight : sum
+  }, 0)
+
+  // 백분율 계산
+  return Math.round((matchedWeight / totalWeight) * 100)
 }
 
 // 강사에게 면접 제안하기
@@ -197,24 +210,15 @@ export async function submitInstructorProposal(
     }
 
     // 3. interview_proposals에 insert
-    const now = new Date()
-    const proposedDate = now.toISOString().split('T')[0] // YYYY-MM-DD
-    const proposedTime = now.toTimeString().split(' ')[0] // HH:MM:SS
-
-    console.log('[submitInstructorProposal] 새 제안 등록:', {
-      proposedDate,
-      proposedTime,
-    })
+    console.log('[submitInstructorProposal] 새 제안 등록')
 
     const { data: result, error: insertError } = await supabase
       .from('interview_proposals')
       .insert({
         academy_user_id: session.userId,
         instructor_user_id: instructorUserId,
-        proposed_date: proposedDate,
-        proposed_time: proposedTime,
-        message: '강사찾기에서 제안',
         status: 'pending',
+        created_at: new Date().toISOString(),
       })
       .select()
 

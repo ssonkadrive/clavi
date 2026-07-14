@@ -36,12 +36,27 @@ export default async function AcademyConditionsPage() {
     console.error('[AcademyConditionsPage] skill_categories 조회 실패:', categoriesError)
   }
 
-  // 3. 기존 academy_conditions 조회 (.maybeSingle() 사용 - row가 없어도 OK)
-  // 참고: 테이블에 실제 있는 컬럼만 선택. 다른 컬럼들은 없음
+  // 3. academies 테이블에서 region 조회
+  console.log('[AcademyConditionsPage] academies.region 조회 시작:', session.userId)
+  const { data: academyData, error: academyError } = await supabase
+    .from('academies')
+    .select('region')
+    .eq('user_id', session.userId)
+    .single()
+
+  if (academyError) {
+    console.error('[AcademyConditionsPage] academies 조회 실패:', academyError)
+  } else {
+    console.log('[AcademyConditionsPage] academies 조회 성공:', {
+      region: academyData?.region,
+    })
+  }
+
+  // 4. 기존 academy_conditions 조회 (.maybeSingle() 사용 - row가 없어도 OK)
   console.log('[AcademyConditionsPage] academy_conditions 조회 시작:', session.userId)
   const { data: existingConditions, error: condError } = await supabase
     .from('academy_conditions')
-    .select('required_skills')
+    .select('pay_min, pay_max, weekdays, description, required_skills')
     .eq('user_id', session.userId)
     .maybeSingle()
 
@@ -56,11 +71,23 @@ export default async function AcademyConditionsPage() {
     console.log('[AcademyConditionsPage] academy_conditions 조회 성공:', {
       hasData: !!existingConditions,
       requiredSkillsCount: existingConditions?.required_skills?.length || 0,
+      payMin: existingConditions?.pay_min,
+      payMax: existingConditions?.pay_max,
+      weekdays: existingConditions?.weekdays,
     })
   }
 
   const categories: SkillCategory[] = skillCategories || []
-  const initialRequiredSkills = existingConditions?.required_skills || []
+
+  // ConditionsForm에 전달할 초기값 (academies와 academy_conditions 병합)
+  const initialConditionsData = {
+    regions: academyData?.region || null,
+    pay_min: existingConditions?.pay_min || null,
+    pay_max: existingConditions?.pay_max || null,
+    weekdays: existingConditions?.weekdays || null,
+    description: existingConditions?.description || null,
+    required_skills: existingConditions?.required_skills || null,
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -78,8 +105,7 @@ export default async function AcademyConditionsPage() {
           <ConditionsForm
             userId={session.userId}
             categories={categories}
-            initialRequiredSkills={initialRequiredSkills}
-            initialConditions={existingConditions || undefined}
+            initialConditions={initialConditionsData}
           />
         )}
       </div>

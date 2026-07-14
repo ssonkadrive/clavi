@@ -1,12 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import Link from 'next/link'
+import ProposeInterviewTimeModal from '@/app/academy/components/ProposeInterviewTimeModal'
 
 interface InterviewProposalDetail {
   id: string
   instructor_name: string
-  proposed_date: string
-  proposed_time: string
   status: 'pending' | 'accepted' | 'declined'
   created_at: string
   responded_at: string | null
@@ -60,7 +59,7 @@ export default async function AcademyProposalDetailPage({
   // 2. interview_proposals에서 제안 조회
   const { data: proposalData, error: proposalError } = await supabase
     .from('interview_proposals')
-    .select('id, instructor_user_id, proposed_date, proposed_time, status, created_at, responded_at')
+    .select('id, instructor_user_id, status, created_at, responded_at')
     .eq('academy_user_id', session.userId)
     .eq('id', proposalId)
     .single()
@@ -90,20 +89,21 @@ export default async function AcademyProposalDetailPage({
     )
   }
 
-  // 3. instructors 테이블에서 강사 정보 조회
-  console.log('[AcademyProposalDetailPage] 강사 정보 조회 시작:', proposalData.instructor_user_id)
-  const { data: instructorData, error: instructorError } = await supabase
-    .from('instructors')
-    .select('user_id, name, bio, location')
+  // 3. instructor_profiles 테이블에서 강사 이름 조회
+  console.log('[AcademyProposalDetailPage] 강사 프로필 조회 시작:', proposalData.instructor_user_id)
+  const { data: profileData, error: profileError } = await supabase
+    .from('instructor_profiles')
+    .select('user_id, name')
     .eq('user_id', proposalData.instructor_user_id)
     .single()
 
-  console.log('[AcademyProposalDetailPage] 강사 정보 조회 결과:', {
-    found: !!instructorData,
-    error: instructorError?.message,
-  })
+  if (profileError) {
+    console.error('[AcademyProposalDetailPage] 강사 프로필 조회 실패:', profileError.message)
+  } else {
+    console.log('[AcademyProposalDetailPage] 강사 프로필 조회 성공')
+  }
 
-  const instructorName = instructorData?.name || '알 수 없는 강사'
+  const instructorName = profileData?.name || '알 수 없는 강사'
 
   // 4. 강사의 선택된 스킬 조회
   const { data: instructorConditions } = await supabase
@@ -137,8 +137,6 @@ export default async function AcademyProposalDetailPage({
   const proposal: InterviewProposalDetail = {
     id: proposalData.id,
     instructor_name: instructorName,
-    proposed_date: proposalData.proposed_date,
-    proposed_time: proposalData.proposed_time,
     status: proposalData.status,
     created_at: proposalData.created_at,
     responded_at: proposalData.responded_at,
@@ -195,27 +193,6 @@ export default async function AcademyProposalDetailPage({
             {getStatusBadge(proposal.status)}
           </div>
 
-          {/* 강사 정보 */}
-          {instructorData && (
-            <div className="mb-8 pb-8 border-b">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">강사 정보</h3>
-              <div className="space-y-3">
-                {instructorData.bio && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">소개</label>
-                    <p className="text-gray-600 mt-1">{instructorData.bio}</p>
-                  </div>
-                )}
-                {instructorData.location && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">지역</label>
-                    <p className="text-gray-600 mt-1">{instructorData.location}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* 역량 정보 */}
           {instructorSkills.length > 0 && (
             <div className="mb-8 pb-8 border-b">
@@ -235,15 +212,6 @@ export default async function AcademyProposalDetailPage({
 
           {/* 면접 정보 */}
           <div className="space-y-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">면접 예정일</label>
-              <p className="text-lg text-gray-900">{formatDate(proposal.proposed_date)}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">면접 예정 시간</label>
-              <p className="text-lg text-gray-900">{proposal.proposed_time}</p>
-            </div>
 
             {proposal.status !== 'pending' && proposal.responded_at && (
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -255,19 +223,28 @@ export default async function AcademyProposalDetailPage({
           </div>
 
           {/* 액션 버튼 */}
-          <div className="flex gap-4 pt-6 border-t">
-            <Link
-              href={`/academy/proposals/${proposal.id}/messages`}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-md transition-colors text-center font-medium"
-            >
-              메시지 보내기
-            </Link>
-            <Link
-              href="/academy/proposals"
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 px-4 rounded-md transition-colors text-center font-medium"
-            >
-              돌아가기
-            </Link>
+          <div className="flex flex-col gap-4 pt-6 border-t">
+            {proposal.status === 'accepted' && (
+              <ProposeInterviewTimeModal
+                proposalId={proposal.id}
+                instructorName={proposal.instructor_name}
+              />
+            )}
+
+            <div className="flex gap-4">
+              <Link
+                href={`/academy/proposals/${proposal.id}/messages`}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-md transition-colors text-center font-medium"
+              >
+                메시지 보내기
+              </Link>
+              <Link
+                href="/academy/proposals"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 px-4 rounded-md transition-colors text-center font-medium"
+              >
+                돌아가기
+              </Link>
+            </div>
           </div>
         </div>
       </div>

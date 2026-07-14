@@ -1,6 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import Link from 'next/link'
+import { generateStrengthMessage } from '@/lib/utils/generateStrengthMessage'
+import InterviewResponseButton from '@/app/(instructor)/components/InterviewResponseButton'
+import SelectInterviewTimeModal from '@/app/(instructor)/components/SelectInterviewTimeModal'
+
+// weekdays 코드를 한글로 변환
+const getWeekdaysLabel = (code: string): string => {
+  const weekdaysMap: Record<string, string> = {
+    all: '요일 무관',
+    weekdays: '평일만',
+    weekends: '주말만',
+  }
+  return weekdaysMap[code] || code
+}
 
 export default async function AcademyDetailPage({
   params,
@@ -19,8 +32,8 @@ export default async function AcademyDetailPage({
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-8">학원 상세 정보</h1>
-          <div className="rounded-md bg-red-50 p-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-8">학원 상세 정보</h1>
+          <div className="rounded-lg bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800">로그인이 필요합니다.</p>
           </div>
         </div>
@@ -33,8 +46,8 @@ export default async function AcademyDetailPage({
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-8">학원 상세 정보</h1>
-          <div className="rounded-md bg-red-50 p-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-8">학원 상세 정보</h1>
+          <div className="rounded-lg bg-red-50 p-4">
             <p className="text-sm font-medium text-red-800">강사만 접근 가능합니다.</p>
           </div>
         </div>
@@ -50,55 +63,90 @@ export default async function AcademyDetailPage({
     .from('academies')
     .select('user_id, academy_name, region')
     .eq('user_id', academyUserId)
-    .single()
+    .maybeSingle()
 
   console.log('[AcademyDetailPage] academies 조회 결과:', {
     hasData: !!academyData,
     error: academyError,
   })
 
-  if (academyError || !academyData) {
-    console.error('[AcademyDetailPage] 학원 정보 조회 실패:', academyError?.message)
-    return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <Link
-            href="/matches"
-            className="text-blue-600 hover:text-blue-700 mb-8 inline-block"
-          >
-            ← 매칭 목록으로 돌아가기
-          </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-8">학원 상세 정보</h1>
-          <div className="rounded-md bg-red-50 p-4">
-            <p className="text-sm font-medium text-red-800">학원 정보를 불러오는 데 실패했습니다.</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // academyData가 없을 수 있지만, proposalData는 계속 조회
 
-  // 3. academy_conditions에서 조건 정보 조회
-  console.log('[AcademyDetailPage] academy_conditions 조회 시작')
-  const { data: conditionsData, error: conditionsError } = await supabase
-    .from('academy_conditions')
-    .select('required_skills, weekdays, pay_max, description')
-    .eq('user_id', academyData.user_id)
-    .single()
+  // 3. interview_proposals에서 이 학원과의 제안 조회 (proposalId 가져오기)
+  console.log('[DEBUG] session.userId:', session.userId)
+  console.log('[DEBUG] academyUserId:', academyUserId)
+  console.log('[AcademyDetailPage] interview_proposals 조회 시작')
+  const { data: proposalData, error: proposalError } = await supabase
+    .from('interview_proposals')
+    .select('id, status, responded_at, proposed_date, proposed_time_range_start, proposed_time_range_end, interview_slot_minutes, interview_date, interview_time')
+    .eq('academy_user_id', academyUserId)
+    .eq('instructor_user_id', session.userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  console.log('[AcademyDetailPage] academy_conditions 조회 결과:', {
-    hasData: !!conditionsData,
-    error: conditionsError,
-    requiredSkills: conditionsData?.required_skills,
+  console.log('[AcademyDetailPage] interview_proposals 조회 결과:', {
+    found: !!proposalData,
+    status: proposalData?.status,
+    responded_at: proposalData?.responded_at,
+    error: proposalError,
   })
 
+  const proposalId = proposalData?.id
+
+  // 4. 강사의 selected_skills 조회
+  console.log('[AcademyDetailPage] instructor_conditions 조회 시작')
+  const { data: instructorConditions, error: instructorCondError } = await supabase
+    .from('instructor_conditions')
+    .select('selected_skills')
+    .eq('user_id', session.userId)
+    .single()
+
+  if (instructorCondError) {
+    console.error('[AcademyDetailPage] instructor_conditions 조회 실패:', instructorCondError)
+  }
+
+  const selectedSkills = instructorConditions?.selected_skills || []
+  console.log('[AcademyDetailPage] selectedSkills:', selectedSkills)
+
+  // 5. academy_conditions에서 조건 정보 조회 (academyData가 있을 때만)
+  console.log('[AcademyDetailPage] academy_conditions 조회 시작')
+  let conditionsData = null
+  let conditionsError = null
+
+  if (academyData) {
+    const result = await supabase
+      .from('academy_conditions')
+      .select('required_skills, weekdays, pay_max, description')
+      .eq('user_id', academyData.user_id)
+      .single()
+
+    conditionsData = result.data
+    conditionsError = result.error
+
+    console.log('[AcademyDetailPage] academy_conditions 조회 결과:', {
+      hasData: !!conditionsData,
+      error: conditionsError,
+      requiredSkills: conditionsData?.required_skills,
+    })
+  } else {
+    console.log('[AcademyDetailPage] academyData가 없어 academy_conditions 조회 스킵')
+  }
+
   let requiredSkillsNames: string[] = []
+  let skillNames: Record<string, string> = {}
   if (conditionsData?.required_skills && Array.isArray(conditionsData.required_skills)) {
-    // 4. skill_categories에서 skill 이름 조회
+    // 6. skill_id 추출 (required_skills는 {skill_id, weight}[] 형태)
+    const requiredSkillIds = conditionsData.required_skills.map((s: any) =>
+      typeof s === 'string' ? s : s.skill_id
+    )
+
+    // 7. skill_categories에서 skill 이름 조회
     console.log('[AcademyDetailPage] skill_categories 조회 시작')
     const { data: skillsData, error: skillsError } = await supabase
       .from('skill_categories')
       .select('id, name')
-      .in('id', conditionsData.required_skills)
+      .in('id', requiredSkillIds)
 
     console.log('[AcademyDetailPage] skill_categories 조회 결과:', {
       count: skillsData?.length,
@@ -107,105 +155,111 @@ export default async function AcademyDetailPage({
 
     if (skillsData) {
       requiredSkillsNames = skillsData.map((skill) => skill.name)
+      skillNames = Object.fromEntries(skillsData.map(s => [s.id, s.name]))
     }
   }
 
-  // 5. 현재 로그인한 강사의 pay_min 조회
-  console.log('[AcademyDetailPage] instructor_conditions 조회 시작')
-  const { data: instructorConditions, error: instructorError } = await supabase
-    .from('instructor_conditions')
-    .select('pay_min')
-    .eq('user_id', session.userId)
-    .single()
-
-  console.log('[AcademyDetailPage] instructor_conditions 조회 결과:', {
-    hasData: !!instructorConditions,
-    payMin: instructorConditions?.pay_min,
-    error: instructorError,
-  })
-
-  // 6. 급여 조건 충족 여부 판단
-  const paySalaryMet =
-    instructorConditions &&
-    conditionsData &&
-    conditionsData.pay_max &&
-    instructorConditions.pay_min <= conditionsData.pay_max
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <Link
           href="/matches"
-          className="text-blue-600 hover:text-blue-700 mb-8 inline-block"
+          className="text-blue-500 hover:text-blue-600 mb-8 inline-block font-medium"
         >
           ← 매칭 목록으로 돌아가기
         </Link>
 
-        <div className="bg-white rounded-lg shadow p-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-            {academyData.academy_name}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {academyData?.academy_name || '학원 정보'}
           </h1>
 
-          <div className="mt-8 space-y-6">
-            {/* 지역 */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">지역</h2>
-              <p className="text-gray-700">{academyData.region}</p>
+          {/* 학원 정보가 없을 때 안내 */}
+          {!academyData && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                학원 정보를 불러올 수 없습니다. 제안 정보는 아래에서 확인하실 수 있습니다.
+              </p>
             </div>
+          )}
 
-            {/* 필요 과목 */}
-            {requiredSkillsNames.length > 0 && (
+          <div className="mt-8 space-y-6">
+            {/* 지역 - 데이터 있을 때만 표시 */}
+            {academyData?.region && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">필요 과목</h2>
-                <div className="flex flex-wrap gap-2">
-                  {requiredSkillsNames.map((skill) => (
-                    <span
-                      key={skill}
-                      className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">지역</h3>
+                <p className="text-sm text-gray-700">{academyData.region}</p>
               </div>
             )}
+
+            {/* 강점 메시지 */}
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">당신의 강점</h3>
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                <p className="text-sm text-blue-900 font-medium">
+                  {generateStrengthMessage(
+                    selectedSkills,
+                    conditionsData?.required_skills || [],
+                    skillNames
+                  )}
+                </p>
+              </div>
+            </div>
 
             {/* 근무 요일 */}
             {conditionsData?.weekdays && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">근무 요일</h2>
-                <p className="text-gray-700">{conditionsData.weekdays}</p>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">근무 요일</h3>
+                <p className="text-sm text-gray-700">{getWeekdaysLabel(conditionsData.weekdays)}</p>
               </div>
             )}
-
-            {/* 급여 조건 */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">급여 조건</h2>
-              {paySalaryMet ? (
-                <p className="text-green-700 font-medium">
-                  ✓ 귀하의 희망 급여 조건에 부합하는 학원입니다.
-                </p>
-              ) : (
-                <p className="text-gray-700">급여 조건을 확인하시기 바랍니다.</p>
-              )}
-            </div>
 
             {/* 설명 */}
             {conditionsData?.description && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">학원 소개</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{conditionsData.description}</p>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">학원 소개</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{conditionsData.description}</p>
               </div>
             )}
           </div>
 
           <div className="mt-8 border-t pt-8">
-            <Link
-              href="/matches"
-              className="inline-block bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              목록으로 돌아가기
-            </Link>
+            {/* 제안이 있고 아직 응답하지 않았을 때 - 수락/거절 버튼 */}
+            {proposalId && !proposalData?.responded_at ? (
+              <InterviewResponseButton
+                proposalId={proposalId}
+                instructorUserId={session.userId}
+                academyName={academyData?.academy_name || '학원'}
+              />
+            ) : null}
+
+            {/* 제안이 수락되고 시간대 제안이 있을 때 - 면접 시간 선택 버튼 */}
+            {proposalId &&
+            proposalData?.status === 'accepted' &&
+            proposalData?.proposed_date &&
+            proposalData?.proposed_time_range_start &&
+            proposalData?.proposed_time_range_end ? (
+              <SelectInterviewTimeModal
+                proposalId={proposalId}
+                proposedDate={proposalData.proposed_date}
+                timeRangeStart={proposalData.proposed_time_range_start}
+                timeRangeEnd={proposalData.proposed_time_range_end}
+                slotMinutes={proposalData.interview_slot_minutes || 60}
+                interviewDate={proposalData.interview_date}
+                interviewTime={proposalData.interview_time}
+              />
+            ) : null}
+
+            {/* 기본 버튼 */}
+            <div className="mt-6">
+              <Link
+                href="/matches"
+                className="inline-block bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                목록으로 돌아가기
+              </Link>
+            </div>
           </div>
         </div>
       </div>

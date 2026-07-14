@@ -1,65 +1,68 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/getSession'
+import { redirect } from 'next/navigation'
+import RecruitmentList, { RecruitmentItem } from '@/app/academy/components/RecruitmentList'
 
-import { useState } from 'react'
-import Link from 'next/link'
-
-interface Proposal {
-  id: string
-  instructor_name: string
-  status: '대기' | '진행중' | '완료'
-  date: string
-  cms_score: number
+// interview_proposals.status + interview_date -> 화면용 상태 라벨
+const toStatusLabel = (
+  status: string,
+  interviewDate: string | null
+): RecruitmentItem['statusLabel'] => {
+  if (status === 'pending') return '대기'
+  if (status === 'declined') return '거절'
+  // accepted: 면접 시간이 확정되면 완료, 아니면 진행중
+  return interviewDate ? '완료' : '진행중'
 }
 
-const mockData: Proposal[] = []
+export default async function RecruitmentPage() {
+  const session = await getSession()
 
-type StatusType = '전체' | '대기' | '진행중' | '완료'
+  if (!session || session.role !== 'academy') {
+    redirect('/signin')
+  }
 
-export default function RecruitmentPage() {
-  const [status, setStatus] = useState<StatusType>('전체')
+  const supabase = await createClient()
 
-  const filtered = status === '전체'
-    ? mockData
-    : mockData.filter(p => p.status === status)
+  // 1. 이 원장이 보낸 면접 제안 조회
+  const { data: proposalsData, error: proposalsError } = await supabase
+    .from('interview_proposals')
+    .select('id, instructor_user_id, status, created_at, interview_date')
+    .eq('academy_user_id', session.userId)
+    .order('created_at', { ascending: false })
+
+  if (proposalsError) {
+    console.error('[RecruitmentPage] interview_proposals 조회 실패:', proposalsError.message)
+  }
+
+  // 2. 강사 이름 조회 (instructor_profiles)
+  const instructorUserIds = (proposalsData || []).map((p) => p.instructor_user_id)
+  let profilesById: Record<string, string> = {}
+
+  if (instructorUserIds.length > 0) {
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('instructor_profiles')
+      .select('user_id, name')
+      .in('user_id', instructorUserIds)
+
+    if (profilesError) {
+      console.error('[RecruitmentPage] instructor_profiles 조회 실패:', profilesError.message)
+    }
+
+    profilesById = Object.fromEntries((profilesData || []).map((p) => [p.user_id, p.name]))
+  }
+
+  // 3. 화면용 데이터로 매핑
+  const items: RecruitmentItem[] = (proposalsData || []).map((p) => ({
+    id: p.id,
+    instructorName: profilesById[p.instructor_user_id] || '알 수 없는 강사',
+    statusLabel: toStatusLabel(p.status, p.interview_date),
+    proposedAt: p.created_at,
+  }))
 
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">채용현황</h1>
-
-      {/* 상태 탭 */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-        {(['전체', '대기', '진행중', '완료'] as StatusType[]).map(s => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`flex-1 py-2 rounded font-medium transition-colors ${
-              status === s
-                ? 'bg-blue-600 text-white'
-                : 'bg-transparent text-gray-600'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {/* 리스트 */}
-      <div className="space-y-2">
-        {filtered.map(proposal => (
-          <div key={proposal.id} className="bg-white p-4 rounded-lg border flex justify-between items-center">
-            <div>
-              <p className="font-bold">{proposal.instructor_name}</p>
-              <p className="text-sm text-gray-500">{proposal.date}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-blue-600">{proposal.cms_score}</p>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                {proposal.status}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <RecruitmentList items={items} />
     </div>
   )
 }

@@ -1,39 +1,66 @@
 'use client'
 
-import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
-export default function MorePage() {
+export default function AcademyMorePage() {
   const router = useRouter()
+  const supabase = createClient()
 
   const handleLogout = async () => {
-    // 로그아웃 로직
-    alert('로그아웃 되었습니다')
-    router.push('/signin')
+    try {
+      await supabase.auth.signOut()
+      router.push('/signin')
+    } catch (err) {
+      console.error('[AcademyMorePage] 로그아웃 에러:', err)
+    }
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">더보기</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">더보기</h1>
 
-      <div className="space-y-2">
-        <Link href="/academy/profile" className="block bg-white p-4 rounded-lg border">
-          👤 프로필 관리
-        </Link>
-        <Link href="/academy/settings" className="block bg-white p-4 rounded-lg border">
-          ⚙️ 설정
-        </Link>
-        <Link href="/academy/help" className="block bg-white p-4 rounded-lg border">
-          ❓ 고객센터
-        </Link>
+        <div className="space-y-3">
+          <Link
+            href="/academy/profile"
+            className="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+          >
+            <p className="font-medium text-gray-900">👤 프로필</p>
+            <p className="text-sm text-gray-600 mt-1">계정 정보 관리</p>
+          </Link>
+
+          <Link
+            href="/academy/settings"
+            className="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+          >
+            <p className="font-medium text-gray-900">⚙️ 설정</p>
+            <p className="text-sm text-gray-600 mt-1">앱 설정 및 알림</p>
+          </Link>
+
+          <Link
+            href="/support"
+            className="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+          >
+            <p className="font-medium text-gray-900">❓ 고객센터</p>
+            <p className="text-sm text-gray-600 mt-1">도움말 및 지원</p>
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="w-full p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors text-left"
+          >
+            <p className="font-medium text-red-900">🚪 로그아웃</p>
+            <p className="text-sm text-red-700 mt-1">계정에서 로그아웃</p>
+          </button>
+        </div>
+
+        <div className="mt-12 p-4 bg-gray-100 rounded-lg text-center">
+          <p className="text-xs text-gray-600">CLAVI v1.0.0</p>
+          <p className="text-xs text-gray-500 mt-1">© 2026 CLAVI</p>
+        </div>
       </div>
-
-      <button
-        onClick={handleLogout}
-        className="w-full bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 font-bold"
-      >
-        🚪 로그아웃
-      </button>
     </div>
   )
 }

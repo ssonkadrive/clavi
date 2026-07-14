@@ -5,8 +5,6 @@ import Link from 'next/link'
 interface InterviewProposalDetail {
   id: string
   academy_name: string
-  proposed_date: string
-  proposed_time: string
   message: string
   status: 'pending' | 'accepted' | 'declined'
   created_at: string
@@ -56,7 +54,7 @@ export default async function InterviewDetailPage({
   // 2. interview_proposals에서 제안 조회 (instructor_user_id 필터 포함)
   const { data: proposalData, error: proposalError } = await supabase
     .from('interview_proposals')
-    .select('id, academy_user_id, proposed_date, proposed_time, message, status, created_at, responded_at, instructor_user_id')
+    .select('id, academy_user_id, message, status, created_at, responded_at, instructor_user_id')
     .eq('instructor_user_id', session.userId)
     .eq('id', proposalId)
     .single()
@@ -105,8 +103,6 @@ export default async function InterviewDetailPage({
   const proposal: InterviewProposalDetail = {
     id: proposalData.id,
     academy_name: academyName,
-    proposed_date: proposalData.proposed_date,
-    proposed_time: proposalData.proposed_time,
     message: proposalData.message,
     status: proposalData.status,
     created_at: proposalData.created_at,
@@ -153,16 +149,6 @@ export default async function InterviewDetailPage({
 
           {/* 상세 정보 */}
           <div className="space-y-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">면접 예정일</label>
-              <p className="text-lg text-gray-900">{formatDate(proposal.proposed_date)}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">면접 예정 시간</label>
-              <p className="text-lg text-gray-900">{proposal.proposed_time}</p>
-            </div>
-
             {proposal.message && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">메시지</label>

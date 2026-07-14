@@ -1,11 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import Link from 'next/link'
+import { generateStrengthMessage } from '@/lib/utils/generateStrengthMessage'
 
 interface MatchedAcademy {
   user_id: string
   academy_name: string
   region: string
+  required_skills: Array<{ skill_id: string; weight: number }>
+  skillNames: Record<string, string>
 }
 
 export default async function MatchesPage() {
@@ -89,22 +92,14 @@ export default async function MatchesPage() {
     타입: typeof selectedSkills[0],
   })
 
-  // 3-1. academy_conditions에서 required_skills가 겹치는 academy의 user_id 목록 조회
-  console.log('[MatchesPage] academy_conditions overlaps 쿼리 시작')
-  console.log('[MatchesPage] overlaps 쿼리 조건:', {
-    테이블: 'academy_conditions',
-    필드: 'required_skills',
-    비교할배열: selectedSkills,
-  })
-
-  const { data: academyConditionsData, error: conditionsError } = await supabase
+  // 3-1. 모든 academy_conditions 조회 (필터 없이)
+  console.log('[MatchesPage] academy_conditions 전체 조회 시작')
+  const { data: allAcademyConditions, error: conditionsError } = await supabase
     .from('academy_conditions')
     .select('user_id, required_skills')
-    .overlaps('required_skills', selectedSkills)
 
   console.log('[MatchesPage] academy_conditions 조회 결과 상세:', {
-    매칭된행개수: academyConditionsData?.length,
-    실제데이터: academyConditionsData,
+    전체개수: allAcademyConditions?.length,
     error: conditionsError?.message,
   })
 
@@ -122,8 +117,24 @@ export default async function MatchesPage() {
     )
   }
 
-  // 3-2. academy_conditions에서 뽑은 user_id 목록이 비어있으면 매칭 없음
-  if (!academyConditionsData || academyConditionsData.length === 0) {
+  // 3-2. 애플리케이션 코드에서 필터링: 강사의 selected_skills와 겹치는 학원만
+  console.log('[MatchesPage] 애플리케이션 코드에서 필터링 시작')
+  const academyConditionsData = (allAcademyConditions || []).filter(ac => {
+    // required_skills는 {skill_id, weight}[] 형태
+    const requiredSkillIds = (ac.required_skills || []).map((s: any) =>
+      typeof s === 'string' ? s : s.skill_id
+    )
+    // 강사의 selected_skills와 겹치는지 확인
+    return requiredSkillIds.some((skillId: string) => selectedSkills.includes(skillId))
+  })
+
+  console.log('[MatchesPage] 필터링 후 매칭된 학원:', {
+    개수: academyConditionsData.length,
+    데이터: academyConditionsData,
+  })
+
+  // 3-3. 필터링된 데이터가 비어있으면 매칭 없음
+  if (academyConditionsData.length === 0) {
     console.log('[MatchesPage] 매칭되는 academy_conditions 없음')
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -137,7 +148,7 @@ export default async function MatchesPage() {
     )
   }
 
-  // 3-3. user_id 목록 추출
+  // 3-4. user_id 목록 추출
   const academyUserIds = academyConditionsData.map((row: any) => row.user_id)
   console.log('[MatchesPage] academyUserIds:', academyUserIds)
 
@@ -171,12 +182,34 @@ export default async function MatchesPage() {
     )
   }
 
-  // 4. academiesData를 MatchedAcademy[] 형태로 변환
+  // 4. skill_categories 조회 (스킬 이름 변환용)
+  console.log('[MatchesPage] skill_categories 조회 시작')
+  const { data: skillCategories, error: skillError } = await supabase
+    .from('skill_categories')
+    .select('id, name')
+    .eq('is_active', true)
+
+  if (skillError) {
+    console.error('[MatchesPage] skill_categories 조회 실패:', skillError)
+  }
+
+  const skillMap = new Map(skillCategories?.map(s => [s.id, s.name]) || [])
+  const skillNames = Object.fromEntries(skillMap)
+  console.log('[MatchesPage] skillNames 생성 완료:', skillNames)
+
+  // 5. academyConditionsData를 Map으로 변환 (user_id → required_skills)
+  const academyConditionsMap = new Map(
+    academyConditionsData.map(row => [row.user_id, row.required_skills || []])
+  )
+
+  // 6. academiesData를 MatchedAcademy[] 형태로 변환
   const matches: MatchedAcademy[] = (academiesData || [])
     .map((academy: any) => ({
       user_id: academy.user_id,
       academy_name: academy.academy_name,
       region: academy.region,
+      required_skills: academyConditionsMap.get(academy.user_id) || [],
+      skillNames: skillNames,
     }))
     .filter(
       (academy, index, self) =>
@@ -199,27 +232,37 @@ export default async function MatchesPage() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {matches.map((academy) => (
-              <div
-                key={academy.user_id}
-                className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {academy.academy_name}
-                </h2>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>
-                    <span className="font-medium">지역:</span> {academy.region}
-                  </p>
-                </div>
-                <Link
-                  href={`/matches/${academy.user_id}`}
-                  className="mt-4 w-full inline-block text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            {matches.map((academy) => {
+              const strengthMessage = generateStrengthMessage(
+                selectedSkills,
+                academy.required_skills,
+                academy.skillNames
+              )
+              return (
+                <div
+                  key={academy.user_id}
+                  className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
                 >
-                  자세히 보기
-                </Link>
-              </div>
-            ))}
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                    {academy.academy_name}
+                  </h2>
+                  <div className="space-y-3 text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">지역:</span> {academy.region}
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                      <p className="text-blue-900 font-medium">{strengthMessage}</p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/matches/${academy.user_id}`}
+                    className="mt-4 w-full inline-block text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    자세히 보기
+                  </Link>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

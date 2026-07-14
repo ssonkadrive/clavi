@@ -6,8 +6,6 @@ import Link from 'next/link'
 interface InterviewProposal {
   id: string
   academy_name: string
-  proposed_date: string
-  proposed_time: string
   message: string
   status: 'pending' | 'accepted' | 'declined'
   created_at: string
@@ -56,7 +54,7 @@ export default async function InterviewsPage() {
   console.log('[InterviewsPage] interview_proposals 조회 시작:', session.userId)
   const { data: proposalsData, error: proposalsError } = await supabase
     .from('interview_proposals')
-    .select('id, academy_user_id, proposed_date, proposed_time, message, status, created_at, responded_at')
+    .select('id, academy_user_id, message, status, created_at, responded_at')
     .eq('instructor_user_id', session.userId)
     .order('created_at', { ascending: false })
 
@@ -114,8 +112,6 @@ export default async function InterviewsPage() {
       return {
         id: proposal.id,
         academy_name: academy?.academy_name || '알 수 없는 학원',
-        proposed_date: proposal.proposed_date,
-        proposed_time: proposal.proposed_time,
         message: proposal.message,
         status: proposal.status,
         created_at: proposal.created_at,
@@ -167,14 +163,6 @@ export default async function InterviewsPage() {
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-20">날짜:</span>
-                    <span className="text-gray-600">{formatDate(proposal.proposed_date)}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-20">시간:</span>
-                    <span className="text-gray-600">{proposal.proposed_time}</span>
-                  </div>
                   {proposal.message && (
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">메시지:</span>

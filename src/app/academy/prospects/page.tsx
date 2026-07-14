@@ -144,7 +144,7 @@ export default function ProspectsPage() {
             name: skillMap.get(skillId) || '알 수 없는 스킬',
           }))
 
-          const cms = calculateCMS(selectedSkillIds, requiredSkills)
+          const cms = calculateWeightedCMS(selectedSkillIds, requiredSkills)
 
           return {
             id: proposal.id,
@@ -183,11 +183,24 @@ export default function ProspectsPage() {
     loadProspects()
   }, [supabase, router])
 
-  // CMS 점수 계산 함수
-  const calculateCMS = (instructorSkills: string[], requiredSkills: string[]): number => {
+  // CMS 점수 계산 함수 (가중치 기반)
+  const calculateWeightedCMS = (
+    instructorSkills: string[],
+    requiredSkills: Array<{ skill_id: string; weight: number }>
+  ): number => {
     if (requiredSkills.length === 0) return 0
-    const matchCount = instructorSkills.filter((skill) => requiredSkills.includes(skill)).length
-    return Math.round((matchCount / requiredSkills.length) * 100)
+
+    // 전체 가중치 합 계산
+    const totalWeight = requiredSkills.reduce((sum, s) => sum + s.weight, 0)
+    if (totalWeight === 0) return 0
+
+    // 강사가 보유한 스킬의 가중치 합 계산
+    const matchedWeight = requiredSkills.reduce((sum, req) => {
+      return instructorSkills.includes(req.skill_id) ? sum + req.weight : sum
+    }, 0)
+
+    // 백분율 계산
+    return Math.round((matchedWeight / totalWeight) * 100)
   }
 
   // CMS 배경색 결정

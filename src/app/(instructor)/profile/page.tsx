@@ -1,155 +1,52 @@
-import { createClient } from '@/lib/supabase/server'
-import { getSession } from '@/lib/auth/getSession'
-import LogoutButton from '@/components/LogoutButton'
+'use client'
 
-export default async function ProfilePage() {
-  const session = await getSession()
+import { useState } from 'react'
+import ProfileTab from './components/ProfileTab'
+import SkillsTab from './components/SkillsTab'
+import EducationTab from './components/EducationTab'
+import VerificationTab from './components/VerificationTab'
 
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-8">강사 프로필</h1>
-          <div className="rounded-md bg-red-50 p-4">
-            <p className="text-sm font-medium text-red-800">로그인이 필요합니다.</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+type TabType = 'profile' | 'skills' | 'education' | 'verification'
 
-  const supabase = await createClient()
+export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState<TabType>('profile')
 
-  // 사용자 정보 조회 (이메일, 가입일)
-  const { data: userData } = await supabase
-    .from('users')
-    .select('id, email, created_at')
-    .eq('id', session.userId)
-    .single()
-
-  // 강사 프로필 정보 조회
-  const { data: profileData } = await supabase
-    .from('instructor_profiles')
-    .select('name, education, degree_type, degree_status')
-    .eq('user_id', session.userId)
-    .single()
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
-
-  const getDegreeStatusLabel = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '취득 완료'
-      case 'pursuing':
-        return '취득 중'
-      case 'not_pursuing':
-        return '미취득'
-      default:
-        return status
-    }
-  }
+  const tabs = [
+    { id: 'profile' as TabType, label: '👤 프로필', icon: '👤' },
+    { id: 'skills' as TabType, label: '💡 역량', icon: '💡' },
+    { id: 'education' as TabType, label: '📚 학력', icon: '📚' },
+    { id: 'verification' as TabType, label: '⚖️ 신원검증', icon: '⚖️' },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">강사 프로필</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">프로필 관리</h1>
 
-        {/* 프로필 정보 카드 */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="px-6 py-8">
-            <div className="space-y-6">
-              {/* 이름 */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  이름
-                </p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">
-                  {profileData?.name || '미입력'}
-                </p>
-              </div>
-
-              {/* 이메일 */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  이메일
-                </p>
-                <p className="mt-2 text-gray-700">{userData?.email || session.email}</p>
-              </div>
-
-              {/* 가입일 */}
-              {userData?.created_at && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    가입일
-                  </p>
-                  <p className="mt-2 text-gray-700">{formatDate(userData.created_at)}</p>
-                </div>
-              )}
-
-              {/* 학력 */}
-              {profileData?.education && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    학력
-                  </p>
-                  <p className="mt-2 text-gray-700">{profileData.education}</p>
-                </div>
-              )}
-
-              {/* 학위 유형 */}
-              {profileData?.degree_type && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    학위 유형
-                  </p>
-                  <p className="mt-2 text-gray-700">{profileData.degree_type}</p>
-                </div>
-              )}
-
-              {/* 학위 상태 */}
-              {profileData?.degree_status && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    학위 상태
-                  </p>
-                  <p className="mt-2 text-gray-700">
-                    {getDegreeStatusLabel(profileData.degree_status)}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+        {/* 탭 네비게이션 */}
+        <div className="flex gap-2 mb-8 border-b border-gray-200">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 font-medium transition-colors border-b-2 ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.icon}</span>
+            </button>
+          ))}
         </div>
 
-        {/* 액션 버튼 */}
-        <div className="space-y-3">
-          <a
-            href="/profile/edit"
-            className="block w-full text-center rounded-md bg-blue-600 py-3 px-4 text-white font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            프로필 수정
-          </a>
-          <a
-            href="/profile/skills"
-            className="block w-full text-center rounded-md bg-purple-600 py-3 px-4 text-white font-medium hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-          >
-            역량 관리
-          </a>
-          <a
-            href="/dashboard"
-            className="block w-full text-center rounded-md bg-green-600 py-3 px-4 text-white font-medium hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          >
-            대시보드
-          </a>
-          <LogoutButton className="w-full" />
+        {/* 탭 콘텐츠 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {activeTab === 'profile' && <ProfileTab />}
+          {activeTab === 'skills' && <SkillsTab />}
+          {activeTab === 'education' && <EducationTab />}
+          {activeTab === 'verification' && <VerificationTab />}
         </div>
       </div>
     </div>

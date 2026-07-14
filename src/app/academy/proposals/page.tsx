@@ -1,12 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import Link from 'next/link'
+import ProposeInterviewTimeModal from '@/app/academy/components/ProposeInterviewTimeModal'
 
 interface InterviewProposal {
   id: string
   instructor_name: string
-  proposed_date: string
-  proposed_time: string
   status: 'pending' | 'accepted' | 'declined'
   created_at: string
   responded_at: string | null
@@ -54,7 +53,7 @@ export default async function AcademyProposalsPage() {
   console.log('[AcademyProposalsPage] interview_proposals 조회 시작:', session.userId)
   const { data: proposalsData, error: proposalsError } = await supabase
     .from('interview_proposals')
-    .select('id, instructor_user_id, proposed_date, proposed_time, status, created_at, responded_at')
+    .select('id, instructor_user_id, status, created_at, responded_at')
     .eq('academy_user_id', session.userId)
     .order('created_at', { ascending: false })
 
@@ -102,8 +101,11 @@ export default async function AcademyProposalsPage() {
 
   console.log('[AcademyProposalsPage] instructor_profiles 조회 결과:', {
     개수: instructorProfilesData?.length,
-    에러: profilesError?.message,
   })
+
+  if (profilesError) {
+    console.error('[AcademyProposalsPage] instructor_profiles 조회 실패:', profilesError.message)
+  }
 
   // 4. 최종 데이터 조합 (instructor_profiles에서 이름 가져오기)
   const proposals: InterviewProposal[] = (proposalsData || [])
@@ -112,8 +114,6 @@ export default async function AcademyProposalsPage() {
       return {
         id: proposal.id,
         instructor_name: instructorProfile?.name || '알 수 없는 강사',
-        proposed_date: proposal.proposed_date,
-        proposed_time: proposal.proposed_time,
         status: proposal.status,
         created_at: proposal.created_at,
         responded_at: proposal.responded_at,
@@ -163,21 +163,21 @@ export default async function AcademyProposalsPage() {
                   {getStatusBadge(proposal.status)}
                 </div>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-20">날짜:</span>
-                    <span className="text-gray-600">{formatDate(proposal.proposed_date)}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium text-gray-700 w-20">시간:</span>
-                    <span className="text-gray-600">{proposal.proposed_time}</span>
-                  </div>
-                </div>
               </Link>
 
               {proposal.responded_at && (
                 <div className="p-6 pt-4 border-t text-sm text-gray-600">
                   <p>응답 시간: {new Date(proposal.responded_at).toLocaleString('ko-KR')}</p>
+                </div>
+              )}
+
+              {/* 강사가 수락한 제안에만 면접 일정 제안 버튼 표시 */}
+              {proposal.status === 'accepted' && (
+                <div className="px-6 pb-6 pt-2">
+                  <ProposeInterviewTimeModal
+                    proposalId={proposal.id}
+                    instructorName={proposal.instructor_name}
+                  />
                 </div>
               )}
             </div>

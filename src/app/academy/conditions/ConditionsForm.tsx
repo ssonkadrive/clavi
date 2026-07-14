@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import SkillCheckboxes from '@/components/SkillCheckboxes'
+import WeightedSkillSelector, { WeightedSkill } from '@/components/WeightedSkillSelector'
 import { updateAcademyConditions } from './actions'
 
 interface SkillCategory {
@@ -26,14 +26,12 @@ interface ConditionsData {
 interface ConditionsFormProps {
   userId: string
   categories: SkillCategory[]
-  initialRequiredSkills?: string[]
   initialConditions?: ConditionsData
 }
 
 export default function ConditionsForm({
   userId,
   categories,
-  initialRequiredSkills = [],
   initialConditions = {},
 }: ConditionsFormProps) {
   const router = useRouter()
@@ -59,7 +57,7 @@ export default function ConditionsForm({
     }
   }, [initialConditions])
 
-  const handleSave = async (requiredSkillIds: string[]) => {
+  const handleSave = async (weightedSkills: WeightedSkill[]) => {
     setIsSaving(true)
     setError('')
     setSuccess('')
@@ -67,7 +65,7 @@ export default function ConditionsForm({
     try {
       console.log('[ConditionsForm] 저장 시작:', {
         userId,
-        requiredSkillIds,
+        weightedSkills,
       })
 
       const result = await updateAcademyConditions({
@@ -77,7 +75,7 @@ export default function ConditionsForm({
         payMax: payMax ? parseInt(payMax) : null,
         weekdays,
         description: description.trim(),
-        requiredSkills: requiredSkillIds,
+        requiredSkills: weightedSkills,
       })
 
       if (result.error) {
@@ -201,14 +199,9 @@ export default function ConditionsForm({
 
       {/* 필요 역량 섹션 */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">필요 역량 (스킬)</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          이곳에서 선택한 스킬은 강사와의 매칭을 위한 CMS(CLAVI Match Score) 계산에 사용됩니다.
-        </p>
-        <SkillCheckboxes
+        <WeightedSkillSelector
           categories={categories}
-          initialSelectedIds={initialRequiredSkills}
-          type="academy"
+          initialWeights={initialConditions?.required_skills as WeightedSkill[] | undefined}
           onSave={handleSave}
         />
       </div>

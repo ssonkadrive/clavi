@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/getSession'
 import { redirect } from 'next/navigation'
 import BottomNavigation from '@/components/BottomNavigation'
+import NotificationBell from '@/app/components/NotificationBell'
 
 export default async function AcademyLayout({
   children,
@@ -24,6 +25,9 @@ export default async function AcademyLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 알림 종 아이콘 */}
+      <NotificationBell />
+
       {/* 메인 콘텐츠 */}
       <div className="pb-32">
         {children}

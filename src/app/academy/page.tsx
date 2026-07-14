@@ -1,8 +1,12 @@
 import { getAcademyDashboardData } from './dashboard/actions'
+import { getSession } from '@/lib/auth/getSession'
 import Link from 'next/link'
 
 export default async function AcademyHomePage() {
+  const session = await getSession()
   const result = await getAcademyDashboardData()
+
+  const isSuperAdmin = session?.userId === process.env.NEXT_PUBLIC_SUPER_ADMIN_ID
 
   const stats = result.data?.stats || {
     instructorsViewed: 0,
@@ -45,13 +49,23 @@ export default async function AcademyHomePage() {
         </div>
       </div>
 
-      {/* 강사 설정 버튼 */}
+      {/* 필수 조건 설정 */}
       <Link
-        href="/academy/find-instructors"
-        className="block w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-bold text-center transition-colors"
+        href="/academy/conditions"
+        className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 px-4 rounded-lg font-bold text-lg text-center transition-colors shadow-lg"
       >
-        🔍 원하는 강사 설정
+        🔒 필수 조건 설정
       </Link>
+
+      {/* 슈퍼어드민 버튼 */}
+      {isSuperAdmin && (
+        <Link
+          href="/admin"
+          className="block w-full bg-red-600 hover:bg-red-700 text-white py-5 px-4 rounded-lg font-bold text-lg text-center transition-colors shadow-lg"
+        >
+          ⚙️ 슈퍼어드민 패널
+        </Link>
+      )}
 
       {/* 최근 활동 미리보기 */}
       <div className="bg-white rounded-lg shadow p-4">
