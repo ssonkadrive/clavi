@@ -68,11 +68,11 @@ export default function SigninPage() {
 
       // 3. role에 따라 리다이렉트
       if (userData.role === 'instructor') {
-        console.log('[signin] 강사로 리다이렉트: /profile')
-        router.push('/profile')
+        console.log('[signin] 강사로 리다이렉트: /')
+        router.push('/')
       } else if (userData.role === 'academy') {
-        console.log('[signin] 학원으로 리다이렉트: /academy')
-        router.push('/academy')
+        console.log('[signin] 학원으로 리다이렉트: /')
+        router.push('/')
       } else {
         console.error('[signin] 알 수 없는 role:', userData.role)
         setError('알 수 없는 사용자 유형입니다.')
