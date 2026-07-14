@@ -104,23 +104,29 @@ export default function EducationTab() {
       if (!userId) throw new Error('userId가 없습니다')
 
       console.log('[EducationTab] 저장 시작, userId:', userId)
-      console.log('[EducationTab] 저장할 데이터:', JSON.stringify(education, null, 2))
-      console.log('[EducationTab] 데이터 타입:', {
-        school_name: typeof education.school_name,
-        degree: typeof education.degree,
-        major: typeof education.major,
-        graduation_year: typeof education.graduation_year,
+      console.log('[EducationTab] education 원본:', education)
+      console.log('[EducationTab] education 각 필드 확인:', {
+        'education.school_name': education.school_name,
+        'education.degree': education.degree,
+        'education.major': education.major,
+        'education.graduation_year': education.graduation_year,
       })
 
       // education 객체를 명시적으로 구성
       const educationPayload = {
-        school_name: education.school_name || '',
-        degree: education.degree || '대졸',
-        major: education.major || '',
-        graduation_year: education.graduation_year || new Date().getFullYear(),
+        school_name: String(education.school_name || ''),
+        degree: String(education.degree || '대졸'),
+        major: String(education.major || ''),
+        graduation_year: Number(education.graduation_year) || new Date().getFullYear(),
       }
 
-      console.log('[EducationTab] 명시적 payload:', JSON.stringify(educationPayload, null, 2))
+      console.log('[EducationTab] educationPayload:', educationPayload)
+      console.log('[EducationTab] 각 필드 값:', {
+        'educationPayload.school_name': educationPayload.school_name,
+        'educationPayload.degree': educationPayload.degree,
+        'educationPayload.major': educationPayload.major,
+        'educationPayload.graduation_year': educationPayload.graduation_year,
+      })
 
       // 먼저 update 시도 (기존 행 업데이트)
       const { data: updateData, error: updateError, status: updateStatus } = await supabase
