@@ -133,29 +133,25 @@ export default async function AcademyDetailPage({
     console.log('[AcademyDetailPage] academyData가 없어 academy_conditions 조회 스킵')
   }
 
-  let requiredSkillsNames: string[] = []
+  // 5-1. 강사의 모든 역량에 대해 skill_names 조회 (학원 조건 무관)
+  // 중요: selectedSkills 기반으로만 조회하여 CMS 정보 노출 방지
   let skillNames: Record<string, string> = {}
-  if (conditionsData?.required_skills && Array.isArray(conditionsData.required_skills)) {
-    // 6. skill_id 추출 (required_skills는 {skill_id, weight}[] 형태)
-    const requiredSkillIds = conditionsData.required_skills.map((s: any) =>
-      typeof s === 'string' ? s : s.skill_id
-    )
-
-    // 7. skill_categories에서 skill 이름 조회
-    console.log('[AcademyDetailPage] skill_categories 조회 시작')
+  if (selectedSkills && Array.isArray(selectedSkills) && selectedSkills.length > 0) {
+    console.log('[AcademyDetailPage] 강사 역량 skill_categories 조회 시작, selectedSkills:', selectedSkills)
     const { data: skillsData, error: skillsError } = await supabase
       .from('skill_categories')
       .select('id, name')
-      .in('id', requiredSkillIds)
+      .in('id', selectedSkills)
 
-    console.log('[AcademyDetailPage] skill_categories 조회 결과:', {
+    console.log('[AcademyDetailPage] 강사 역량 skill_categories 조회 결과:', {
       count: skillsData?.length,
       error: skillsError,
+      skillNames: skillsData?.map(s => ({ id: s.id, name: s.name })),
     })
 
     if (skillsData) {
-      requiredSkillsNames = skillsData.map((skill) => skill.name)
       skillNames = Object.fromEntries(skillsData.map(s => [s.id, s.name]))
+      console.log('[AcademyDetailPage] 최종 skillNames (학원 조건 제외):', skillNames)
     }
   }
 
