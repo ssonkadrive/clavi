@@ -31,6 +31,7 @@ export default function SkillsTab() {
 
       console.log('[SkillsTab] 역량 로드 시작, userId:', authData.user.id)
 
+      // 역량 조회 (RLS 권한 확인)
       const { data: skillsData, error: skillsError } = await supabase
         .from('skill_categories')
         .select('id, name')
@@ -39,25 +40,40 @@ export default function SkillsTab() {
         .order('display_order', { ascending: true })
 
       if (skillsError) {
-        console.error('[SkillsTab] 역량 조회 에러:', skillsError)
-        throw skillsError
+        console.error('[SkillsTab] 역량 조회 에러:', {
+          message: skillsError.message,
+          code: skillsError.code,
+          details: skillsError.details,
+          hint: skillsError.hint,
+        })
+        throw new Error(`역량 조회 실패: ${skillsError.message || '알 수 없는 에러'}`)
       }
 
       console.log('[SkillsTab] 조회 완료:', skillsData?.length || 0, '개')
       setSkills(skillsData || [])
 
-      const { data: condData, error: condError } = await supabase
-        .from('instructor_conditions')
-        .select('selected_skills')
-        .eq('user_id', authData.user.id)
-        .single()
+      // 선택된 역량 조회 (instructor_conditions이 없을 수 있음)
+      try {
+        const { data: condData, error: condError } = await supabase
+          .from('instructor_conditions')
+          .select('selected_skills')
+          .eq('user_id', authData.user.id)
+          .single()
 
-      if (condError && condError.code !== 'PGRST116') {
-        console.error('[SkillsTab] 조건 조회 에러:', condError)
+        if (!condError) {
+          setSelectedSkills(condData?.selected_skills || [])
+          console.log('[SkillsTab] 선택된 역량:', condData?.selected_skills || [])
+        } else if (condError.code === 'PGRST116') {
+          console.log('[SkillsTab] instructor_conditions 데이터 없음 (초기 사용자)')
+          setSelectedSkills([])
+        } else {
+          console.warn('[SkillsTab] 선택 역량 조회 경고:', condError.message)
+          setSelectedSkills([])
+        }
+      } catch (condErr) {
+        console.warn('[SkillsTab] 선택 역량 조회 중 예외:', condErr)
+        setSelectedSkills([])
       }
-
-      setSelectedSkills(condData?.selected_skills || [])
-      console.log('[SkillsTab] 선택된 역량:', condData?.selected_skills || [])
     } catch (err) {
       const message = err instanceof Error ? err.message : '알 수 없는 에러'
       console.error('[SkillsTab] 역량 로드 실패:', message)
@@ -81,16 +97,39 @@ export default function SkillsTab() {
       const { data: authData } = await supabase.auth.getUser()
       if (!authData.user) throw new Error('사용자 정보 없음')
 
-      const { error: updateError } = await supabase
+      console.log('[SkillsTab] 저장 시작, userId:', authData.user.id)
+      console.log('[SkillsTab] 저장할 역량:', selectedSkills)
+
+      // 먼저 update 시도
+      const { error: updateError, status: updateStatus } = await supabase
         .from('instructor_conditions')
         .update({ selected_skills: selectedSkills })
         .eq('user_id', authData.user.id)
 
+      console.log('[SkillsTab] UPDATE 결과:', {
+        status: updateStatus,
+        error: updateError,
+      })
+
       if (updateError) {
-        if (updateError.code === 'PGRST116' || updateError.code === 'NODATA') {
+        console.log('[SkillsTab] UPDATE 에러 상세:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        })
+
+        // 행이 없으면 insert 시도
+        if (updateError.code === 'PGRST116' || updateError.code === 'NODATA' || updateStatus === 406) {
+          console.log('[SkillsTab] 기존 데이터 없음, INSERT 시도')
+
           const { error: insertError } = await supabase
             .from('instructor_conditions')
             .insert({ user_id: authData.user.id, selected_skills: selectedSkills })
+
+          console.log('[SkillsTab] INSERT 결과:', {
+            error: insertError,
+          })
 
           if (insertError) throw insertError
         } else {
@@ -98,10 +137,11 @@ export default function SkillsTab() {
         }
       }
 
+      console.log('[SkillsTab] 저장 완료')
       alert('역량이 저장되었습니다.')
     } catch (err) {
       const message = err instanceof Error ? err.message : '알 수 없는 에러'
-      console.error('[SkillsTab] 저장 실패:', message)
+      console.error('[SkillsTab] 저장 실패:', message, err)
       alert('저장 실패: ' + message)
     } finally {
       setIsSaving(false)

@@ -66,30 +66,54 @@ export default function EducationTab() {
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
     try {
-      const { data: authData } = await supabase.auth.getUser()
-      if (!authData.user) throw new Error('사용자 정보 없음')
-
       // 데이터 유효성 확인
       if (!education.school_name.trim()) {
         alert('학교명을 입력하세요.')
-        setIsSaving(false)
         return
       }
 
-      // 먼저 update 시도
-      const { error: updateError } = await supabase
+      setIsSaving(true)
+
+      const { data: authData } = await supabase.auth.getUser()
+      if (!authData.user) throw new Error('사용자 정보 없음')
+
+      console.log('[EducationTab] 저장 시작, userId:', authData.user.id)
+      console.log('[EducationTab] 저장할 데이터:', education)
+
+      // 먼저 update 시도 (기존 행 업데이트)
+      const { data: updateData, error: updateError, status: updateStatus } = await supabase
         .from('instructor_profiles')
         .update({ education })
         .eq('user_id', authData.user.id)
 
+      console.log('[EducationTab] UPDATE 결과:', {
+        status: updateStatus,
+        data: updateData,
+        error: updateError,
+      })
+
       if (updateError) {
-        // 행이 없으면 insert 시도
-        if (updateError.code === 'PGRST116' || updateError.code === 'NODATA') {
-          const { error: insertError } = await supabase
+        // 특정 에러 코드 확인
+        console.log('[EducationTab] UPDATE 에러 상세:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+        })
+
+        // 행이 없으면 insert 시도 (새 행 생성)
+        if (updateError.code === 'PGRST116' || updateError.code === 'NODATA' || updateStatus === 406) {
+          console.log('[EducationTab] 기존 데이터 없음, INSERT 시도')
+
+          const { data: insertData, error: insertError } = await supabase
             .from('instructor_profiles')
             .insert({ user_id: authData.user.id, education })
+
+          console.log('[EducationTab] INSERT 결과:', {
+            data: insertData,
+            error: insertError,
+          })
 
           if (insertError) throw insertError
         } else {
@@ -97,10 +121,14 @@ export default function EducationTab() {
         }
       }
 
+      console.log('[EducationTab] 저장 완료')
       alert('학력이 저장되었습니다.')
+
+      // 저장 후 재로드하여 상태 확인
+      await loadEducation()
     } catch (err) {
       const message = err instanceof Error ? err.message : '알 수 없는 에러'
-      console.error('[EducationTab] 저장 실패:', message)
+      console.error('[EducationTab] 저장 실패:', message, err)
       alert('저장 실패: ' + message)
     } finally {
       setIsSaving(false)
