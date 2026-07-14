@@ -329,7 +329,7 @@ export default function SkillsTab() {
       .map((skillId) => {
         const skill = tree.flatMap((node) => {
           const flatten = (n: SkillNode): SkillNode[] => [n, ...n.children.flatMap(flatten)]
-          return flatten(n)
+          return flatten(node)
         }).find((s) => s.id === skillId)
         return skill?.name || ''
       })
