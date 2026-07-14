@@ -55,8 +55,20 @@ export default function EducationTab() {
         // 행이 없으면 기본값 사용
         setEducation(DEFAULT_EDUCATION)
       } else if (data?.education) {
+        // 로드된 데이터 상세 로깅
+        console.log('[EducationTab] 로드된 education 원본:', JSON.stringify(data.education, null, 2))
+        console.log('[EducationTab] education 타입:', typeof data.education)
+        console.log('[EducationTab] education은 객체인가:', data.education !== null && typeof data.education === 'object')
+
         // 로드된 데이터 확인 및 안전하게 설정
         const loaded = data.education as Partial<Education>
+        console.log('[EducationTab] 파싱된 필드들:', {
+          school_name: loaded.school_name,
+          degree: loaded.degree,
+          major: loaded.major,
+          graduation_year: loaded.graduation_year,
+        })
+
         setEducation({
           school_name: loaded.school_name ?? '',
           degree: loaded.degree ?? '대졸',
@@ -64,6 +76,7 @@ export default function EducationTab() {
           graduation_year: typeof loaded.graduation_year === 'number' ? loaded.graduation_year : new Date().getFullYear(),
         })
       } else {
+        console.log('[EducationTab] data.education이 없음:', data)
         setEducation(DEFAULT_EDUCATION)
       }
     } catch (err) {
@@ -99,10 +112,20 @@ export default function EducationTab() {
         graduation_year: typeof education.graduation_year,
       })
 
+      // education 객체를 명시적으로 구성
+      const educationPayload = {
+        school_name: education.school_name || '',
+        degree: education.degree || '대졸',
+        major: education.major || '',
+        graduation_year: education.graduation_year || new Date().getFullYear(),
+      }
+
+      console.log('[EducationTab] 명시적 payload:', JSON.stringify(educationPayload, null, 2))
+
       // 먼저 update 시도 (기존 행 업데이트)
       const { data: updateData, error: updateError, status: updateStatus } = await supabase
         .from('instructor_profiles')
-        .update({ education })
+        .update({ education: educationPayload })
         .eq('user_id', userId)
 
       console.log('[EducationTab] UPDATE 결과:', {
@@ -126,7 +149,7 @@ export default function EducationTab() {
 
           const { data: insertData, error: insertError } = await supabase
             .from('instructor_profiles')
-            .insert({ user_id: userId, education })
+            .insert({ user_id: userId, education: educationPayload })
 
           console.log('[EducationTab] INSERT 결과:', {
             data: insertData,
