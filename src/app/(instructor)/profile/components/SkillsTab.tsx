@@ -22,6 +22,7 @@ export default function SkillsTab() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -281,6 +282,7 @@ export default function SkillsTab() {
       }
 
       alert('역량이 저장되었습니다.')
+      setIsEditing(false)
     } catch (err) {
       const message = err instanceof Error ? err.message : '알 수 없는 에러'
       console.error('[SkillsTab] 저장 실패:', message, err)
@@ -321,6 +323,24 @@ export default function SkillsTab() {
     )
   }
 
+  // 축약된 상태: 선택된 역량 개수만 표시
+  if (!isEditing) {
+    return (
+      <div className="flex items-center justify-between">
+        <p className="text-lg font-semibold text-gray-900">
+          현재 선택한 역량: <span className="text-blue-600">{selectedSkills.length}개</span>
+        </p>
+        <button
+          onClick={() => setIsEditing(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
+          수정하기
+        </button>
+      </div>
+    )
+  }
+
+  // 편집 상태: 전체 트리 표시
   return (
     <div className="space-y-6">
       <div>
@@ -334,13 +354,21 @@ export default function SkillsTab() {
         {tree.map((node) => renderNode(node, 0))}
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={isSaving}
-        className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg font-medium"
-      >
-        {isSaving ? '저장 중...' : '저장하기'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsEditing(false)}
+          className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-medium transition-colors"
+        >
+          취소
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+        >
+          {isSaving ? '저장 중...' : '저장하기'}
+        </button>
+      </div>
     </div>
   )
 }
