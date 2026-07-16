@@ -13,6 +13,43 @@ export interface InstructorCard {
   matchScore: number
 }
 
+// education 컬럼이 JSON({"school_name","degree","major","graduation_year"}) 또는
+// 일반 문자열로 저장되어 있어 표시용 문자열로 변환
+function formatEducation(education: unknown): string | null {
+  if (!education) return null
+
+  let parsed: unknown = education
+  if (typeof education === 'string') {
+    const trimmed = education.trim()
+    if (trimmed.startsWith('{')) {
+      try {
+        parsed = JSON.parse(trimmed)
+      } catch {
+        return trimmed
+      }
+    } else {
+      return trimmed || null
+    }
+  }
+
+  if (typeof parsed === 'object' && parsed !== null) {
+    const e = parsed as {
+      school_name?: string
+      major?: string
+      degree?: string
+      graduation_year?: number | string
+    }
+    const parts = [e.school_name, e.major, e.degree].filter(Boolean)
+    let result = parts.join(' ')
+    if (e.graduation_year) {
+      result += ` (${e.graduation_year})`
+    }
+    return result || null
+  }
+
+  return null
+}
+
 export interface InstructorSearchData {
   instructors: InstructorCard[]
   skillOptions: string[]
@@ -113,7 +150,7 @@ export async function loadInstructorSearch(): Promise<{
       return {
         userId: profile.user_id,
         name: profile.name || '이름 없음',
-        education: profile.education || null,
+        education: formatEducation(profile.education),
         experience: profile.years_of_experience || 0,
         profileImageUrl: null,
         skills: skillNames,
