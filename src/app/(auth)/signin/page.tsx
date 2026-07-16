@@ -73,6 +73,9 @@ export default function SigninPage() {
       } else if (userData.role === 'academy') {
         console.log('[signin] 학원으로 리다이렉트: /')
         router.push('/')
+      } else if (userData.role === 'student') {
+        console.log('[signin] 학생으로 리다이렉트: /student')
+        router.push('/student')
       } else {
         console.error('[signin] 알 수 없는 role:', userData.role)
         setError('알 수 없는 사용자 유형입니다.')

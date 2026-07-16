@@ -49,10 +49,10 @@ export async function loadInstructorSearch(): Promise<{
         ? studentData.interests.split(',').map((s: string) => s.trim()).filter(Boolean)
         : []
 
-    // 2. 강사 프로필 조회
+    // 2. 강사 프로필 조회 (profile_image_url 컬럼은 DB에 없음)
     const { data: instructorProfiles, error: profileError } = await supabase
       .from('instructor_profiles')
-      .select('user_id, name, education, years_of_experience, profile_image_url')
+      .select('user_id, name, education, years_of_experience')
 
     if (profileError) {
       return { data: null, error: `[instructor_profiles] ${profileError.message}` }
@@ -115,7 +115,7 @@ export async function loadInstructorSearch(): Promise<{
         name: profile.name || '이름 없음',
         education: profile.education || null,
         experience: profile.years_of_experience || 0,
-        profileImageUrl: profile.profile_image_url || null,
+        profileImageUrl: null,
         skills: skillNames,
         matchScore,
       }
