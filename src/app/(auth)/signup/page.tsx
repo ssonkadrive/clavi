@@ -201,7 +201,7 @@ export default function SignupPage() {
 
         <p className="mt-2 text-center text-sm text-gray-600">
           이미 계정이 있으신가요?{' '}
-          <a href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500">
+          <a href="/signin" className="font-medium text-blue-600 hover:text-blue-500">
             로그인
           </a>
         </p>
