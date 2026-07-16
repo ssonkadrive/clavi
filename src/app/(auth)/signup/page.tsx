@@ -58,7 +58,20 @@ export default function SignupPage() {
         return
       }
 
-      // 3. role에 따라 추가 테이블에 데이터 INSERT
+      // 3. 로그인 (인증 상태 확보)
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (loginError) {
+        console.error('Auto login error:', loginError)
+        setError('로그인에 실패했습니다.')
+        setLoading(false)
+        return
+      }
+
+      // 4. 로그인 후 - role에 따라 추가 테이블에 데이터 INSERT
       if (role === 'student') {
         const { error: studentError } = await supabase
           .from('students')
@@ -73,19 +86,6 @@ export default function SignupPage() {
           setLoading(false)
           return
         }
-      }
-
-      // 4. 로그인하고 role에 따라 리다이렉트
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (loginError) {
-        console.error('Auto login error:', loginError)
-        setError('로그인에 실패했습니다.')
-        setLoading(false)
-        return
       }
 
       // role에 따라 다른 페이지로 이동
