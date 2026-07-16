@@ -8,7 +8,7 @@ export default function SignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'instructor' | 'academy'>('instructor')
+  const [role, setRole] = useState<'instructor' | 'academy' | 'student'>('instructor')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,7 +58,24 @@ export default function SignupPage() {
         return
       }
 
-      // 3. 로그인하고 role에 따라 리다이렉트
+      // 3. role에 따라 추가 테이블에 데이터 INSERT
+      if (role === 'student') {
+        const { error: studentError } = await supabase
+          .from('students')
+          .insert({
+            user_id: authData.user.id,
+            name: '',
+          })
+
+        if (studentError) {
+          console.error('Insert student error:', studentError)
+          setError('학생 정보 저장에 실패했습니다.')
+          setLoading(false)
+          return
+        }
+      }
+
+      // 4. 로그인하고 role에 따라 리다이렉트
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -74,8 +91,10 @@ export default function SignupPage() {
       // role에 따라 다른 페이지로 이동
       if (role === 'instructor') {
         router.push('/profile')
-      } else {
+      } else if (role === 'academy') {
         router.push('/academy')
+      } else {
+        router.push('/student/profile')
       }
     } catch (err) {
       console.error('Unexpected signup error:', err)
@@ -141,7 +160,7 @@ export default function SignupPage() {
                   name="role"
                   value="instructor"
                   checked={role === 'instructor'}
-                  onChange={(e) => setRole(e.target.value as 'instructor' | 'academy')}
+                  onChange={(e) => setRole(e.target.value as 'instructor' | 'academy' | 'student')}
                   className="h-4 w-4 border-gray-300"
                 />
                 <span className="ml-3 text-sm font-medium text-gray-700">강사</span>
@@ -152,10 +171,21 @@ export default function SignupPage() {
                   name="role"
                   value="academy"
                   checked={role === 'academy'}
-                  onChange={(e) => setRole(e.target.value as 'instructor' | 'academy')}
+                  onChange={(e) => setRole(e.target.value as 'instructor' | 'academy' | 'student')}
                   className="h-4 w-4 border-gray-300"
                 />
                 <span className="ml-3 text-sm font-medium text-gray-700">학원</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="role"
+                  value="student"
+                  checked={role === 'student'}
+                  onChange={(e) => setRole(e.target.value as 'instructor' | 'academy' | 'student')}
+                  className="h-4 w-4 border-gray-300"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">학생 (학부모)</span>
               </label>
             </div>
           </div>

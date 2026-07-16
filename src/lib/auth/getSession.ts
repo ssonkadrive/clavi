@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 export interface Session {
   userId: string
   email: string
-  role: 'instructor' | 'academy'
+  role: 'instructor' | 'academy' | 'student'
   isAdmin: boolean
 }
 

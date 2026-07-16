@@ -10,7 +10,7 @@ interface NavItem {
 }
 
 interface BottomNavigationProps {
-  role: 'instructor' | 'academy'
+  role: 'instructor' | 'academy' | 'student'
   items: NavItem[]
 }
 

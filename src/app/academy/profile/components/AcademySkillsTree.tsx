@@ -41,7 +41,7 @@ export default function AcademySkillsTree({
       if (skill?.parent_id) {
         newExpanded.add(skill.parent_id)
         // 상위 부모들도 확장
-        let currentParentId = skill.parent_id
+        let currentParentId: string | null = skill.parent_id
         while (currentParentId) {
           newExpanded.add(currentParentId)
           const parentSkill = allSkills.find((s) => s.id === currentParentId)
