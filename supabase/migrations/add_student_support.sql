@@ -69,3 +69,29 @@ CREATE TRIGGER trigger_update_instructor_sessions_updated_at
   BEFORE UPDATE ON instructor_sessions
   FOR EACH ROW
   EXECUTE FUNCTION update_instructor_sessions_updated_at();
+
+-- 6. 학생이 강사 검색에 필요한 테이블을 읽을 수 있도록 SELECT 정책 추가
+-- (기존 정책이 academy 전용인 경우 대비, 인증된 사용자 전체 허용)
+DROP POLICY IF EXISTS "Authenticated users can view instructor profiles"
+  ON instructor_profiles;
+CREATE POLICY "Authenticated users can view instructor profiles"
+  ON instructor_profiles
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can view instructor conditions"
+  ON instructor_conditions;
+CREATE POLICY "Authenticated users can view instructor conditions"
+  ON instructor_conditions
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can view skill categories"
+  ON skill_categories;
+CREATE POLICY "Authenticated users can view skill categories"
+  ON skill_categories
+  FOR SELECT
+  TO authenticated
+  USING (true);
