@@ -94,7 +94,7 @@ export default function SigninPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             또는{' '}
-            <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
               새 계정을 만들기
             </a>
           </p>
@@ -151,7 +151,7 @@ export default function SigninPage() {
         <div className="text-center text-sm text-gray-600">
           <p>
             계정이 없으신가요?{' '}
-            <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
               회원가입
             </a>
           </p>
