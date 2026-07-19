@@ -88,14 +88,41 @@ export async function respondToSessionRequest(
 
     const supabase = await createClient()
 
-    const { error: updateError } = await supabase
+    const { data: updatedSession, error: updateError } = await supabase
       .from('instructor_sessions')
       .update({ status, responded_at: new Date().toISOString() })
       .eq('id', sessionId)
       .eq('instructor_user_id', session.userId)
+      .select('student_user_id')
+      .single()
 
     if (updateError) {
       return { success: false, error: `상태 업데이트 실패: ${updateError.message}` }
+    }
+
+    // 학생에게 결과 알림 발송 (실패해도 상태 변경 자체는 유지)
+    const { data: instructorProfile } = await supabase
+      .from('instructor_profiles')
+      .select('name')
+      .eq('user_id', session.userId)
+      .single()
+
+    const instructorName = instructorProfile?.name || '강사'
+
+    const { error: notificationError } = await supabase.from('notifications').insert({
+      recipient_id: updatedSession.student_user_id,
+      recipient_role: 'student',
+      type: status === 'accepted' ? 'session_accepted' : 'session_rejected',
+      title: status === 'accepted' ? '수강 신청이 수락되었습니다' : '수강 신청이 거절되었습니다',
+      message:
+        status === 'accepted'
+          ? `${instructorName} 강사님이 수강 신청을 수락했습니다.`
+          : `${instructorName} 강사님이 수강 신청을 거절했습니다.`,
+      read: false,
+    })
+
+    if (notificationError) {
+      console.error('[respondToSessionRequest] 알림 발송 실패:', notificationError.message)
     }
 
     return { success: true }

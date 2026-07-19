@@ -28,6 +28,10 @@ const getNotificationIcon = (type: string) => {
       return '✅'
     case 'session_request':
       return '🎓'
+    case 'session_accepted':
+      return '✅'
+    case 'session_rejected':
+      return '❌'
     default:
       return '🔔'
   }
@@ -131,9 +135,11 @@ export default function NotificationList({ initialNotifications }: NotificationL
         const link =
           notification.type === 'session_request'
             ? '/students'
-            : notification.academyUserId
-              ? `/matches/${notification.academyUserId}`
-              : '#'
+            : notification.type === 'session_accepted' || notification.type === 'session_rejected'
+              ? '/student/sessions'
+              : notification.academyUserId
+                ? `/matches/${notification.academyUserId}`
+                : '#'
 
         return (
           <div

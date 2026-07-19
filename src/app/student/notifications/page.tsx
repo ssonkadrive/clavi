@@ -33,7 +33,7 @@ export default async function StudentNotificationsPage() {
 
   const { data: notificationsData, error } = await supabase
     .from('notifications')
-    .select('id, type, title, message, read, created_at, related_proposal_id, academy_user_id')
+    .select('id, type, title, message, read, created_at, related_proposal_id')
     .eq('recipient_id', session.userId)
     .order('created_at', { ascending: false })
     .limit(50)
@@ -59,7 +59,7 @@ export default async function StudentNotificationsPage() {
     read: n.read,
     createdAt: n.created_at,
     relatedProposalId: n.related_proposal_id,
-    academyUserId: n.academy_user_id,
+    academyUserId: null,
   }))
 
   return (

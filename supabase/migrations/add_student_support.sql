@@ -96,6 +96,29 @@ CREATE POLICY "Authenticated users can view skill categories"
   TO authenticated
   USING (true);
 
+-- 6-1. notifications.type CHECK 제약조건에 학생-강사 알림 타입 추가
+-- (기존 constraint가 'proposal' 등 5개 값만 허용해서 session_request류 INSERT가
+--  모두 조용히 실패하고 있었음)
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS valid_type;
+ALTER TABLE notifications ADD CONSTRAINT valid_type
+  CHECK (type = ANY (ARRAY[
+    'proposal'::text,
+    'response_accept'::text,
+    'response_reject'::text,
+    'interview_proposed'::text,
+    'interview_confirmed'::text,
+    'session_request'::text,
+    'session_accepted'::text,
+    'session_rejected'::text
+  ]));
+
+-- 6-2. notifications.recipient_role CHECK 제약조건에 'student' 추가
+-- (기존 constraint가 'instructor', 'academy'만 허용해서 강사->학생 알림 INSERT가
+--  모두 조용히 실패하고 있었음)
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS valid_role;
+ALTER TABLE notifications ADD CONSTRAINT valid_role
+  CHECK (recipient_role = ANY (ARRAY['instructor'::text, 'academy'::text, 'student'::text]));
+
 -- 7. 강사가 자신에게 수강 신청한 학생 정보를 조회할 수 있도록 SELECT 정책 추가
 -- (강사-학생 관계가 있는 경우에만 허용, 무관한 학생 정보는 조회 불가)
 DROP POLICY IF EXISTS "Instructors can view students who requested them"
