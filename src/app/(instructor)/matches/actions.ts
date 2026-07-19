@@ -88,22 +88,26 @@ export async function selectInterviewTime(
 
   // 8. 같은 학원에 정확히 같은 시간(interview_date + interview_time)으로 이미 확정된
   // 다른 면접이 있는지 확인 — 실제 더블부킹을 막는 최종 방어선
+  // interview_proposals는 강사 본인 row만 SELECT 가능한 RLS가 걸려 있어
+  // (다른 강사의 확정 면접을 직접 조회할 수 없음) SECURITY DEFINER RPC로 겹침 여부만 확인한다.
   console.log('[selectInterviewTime] 더블부킹 확인 시작')
-  const { data: doubleBooked, error: doubleBookedError } = await supabase
-    .from('interview_proposals')
-    .select('id')
-    .eq('academy_user_id', proposal.academy_user_id)
-    .eq('interview_date', proposal.proposed_date)
-    .eq('interview_time', interviewTime)
-    .neq('id', proposalId)
+  const { data: hasConflict, error: conflictCheckError } = await supabase.rpc(
+    'check_interview_time_conflict',
+    {
+      p_academy_user_id: proposal.academy_user_id,
+      p_interview_date: proposal.proposed_date,
+      p_interview_time: interviewTime,
+      p_exclude_proposal_id: proposalId,
+    }
+  )
 
-  if (doubleBookedError) {
-    console.error('[selectInterviewTime] 더블부킹 확인 실패:', doubleBookedError.message)
+  if (conflictCheckError) {
+    console.error('[selectInterviewTime] 더블부킹 확인 실패:', conflictCheckError.message)
     return { error: '시간 확인 중 오류가 발생했습니다.' }
   }
 
-  if (doubleBooked && doubleBooked.length > 0) {
-    console.error('[selectInterviewTime] 이미 다른 면접이 잡힌 시간:', doubleBooked)
+  if (hasConflict) {
+    console.error('[selectInterviewTime] 이미 다른 면접이 잡힌 시간')
     return { error: '이미 다른 면접이 잡힌 시간입니다.' }
   }
 
