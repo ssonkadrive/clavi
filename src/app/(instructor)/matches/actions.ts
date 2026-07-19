@@ -86,7 +86,28 @@ export async function selectInterviewTime(
     return { error: `${slotMinutes}분 단위로만 선택 가능합니다.` }
   }
 
-  // 8. interview_proposals 업데이트 (proposed_date + selected time 저장)
+  // 8. 같은 학원에 정확히 같은 시간(interview_date + interview_time)으로 이미 확정된
+  // 다른 면접이 있는지 확인 — 실제 더블부킹을 막는 최종 방어선
+  console.log('[selectInterviewTime] 더블부킹 확인 시작')
+  const { data: doubleBooked, error: doubleBookedError } = await supabase
+    .from('interview_proposals')
+    .select('id')
+    .eq('academy_user_id', proposal.academy_user_id)
+    .eq('interview_date', proposal.proposed_date)
+    .eq('interview_time', interviewTime)
+    .neq('id', proposalId)
+
+  if (doubleBookedError) {
+    console.error('[selectInterviewTime] 더블부킹 확인 실패:', doubleBookedError.message)
+    return { error: '시간 확인 중 오류가 발생했습니다.' }
+  }
+
+  if (doubleBooked && doubleBooked.length > 0) {
+    console.error('[selectInterviewTime] 이미 다른 면접이 잡힌 시간:', doubleBooked)
+    return { error: '이미 다른 면접이 잡힌 시간입니다.' }
+  }
+
+  // 9. interview_proposals 업데이트 (proposed_date + selected time 저장)
   console.log('[selectInterviewTime] interview_proposals 업데이트')
   const { error: updateError } = await supabase
     .from('interview_proposals')

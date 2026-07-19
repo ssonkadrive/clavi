@@ -62,11 +62,11 @@ export default function ProposeInterviewTimeModal({
         // 모달을 닫고 상단 토스트 표시
         setIsOpen(false)
         resetForm()
-        setToast('✓ 면접 일정을 제안했습니다!')
+        setToast(result.warning ? `✓ 면접 일정을 제안했습니다! (${result.warning})` : '✓ 면접 일정을 제안했습니다!')
         setTimeout(() => {
           setToast('')
           router.refresh()
-        }, 2000)
+        }, result.warning ? 4000 : 2000)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '오류가 발생했습니다.'

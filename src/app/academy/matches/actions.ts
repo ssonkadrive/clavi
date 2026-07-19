@@ -267,7 +267,7 @@ export async function proposeInterviewTime(
   timeRangeStart: string,
   timeRangeEnd: string,
   slotMinutes: number
-): Promise<{ success?: boolean; error?: string }> {
+): Promise<{ success?: boolean; error?: string; warning?: string }> {
   console.log('[proposeInterviewTime] 면접 시간대 제안 시작:', {
     proposalId,
     proposedDate,
@@ -349,7 +349,26 @@ export async function proposeInterviewTime(
     return { error: '슬롯 단위는 30분 또는 60분이어야 합니다.' }
   }
 
-  // 6. interview_proposals 업데이트
+  // 6. 같은 날짜에 이미 확정된 다른 면접이 있는지 확인 (경고만, 진행은 허용)
+  // 날짜 단위 체크라 실제 시간 겹침 여부까지는 알 수 없음 — 최종 차단은 selectInterviewTime에서 처리
+  console.log('[proposeInterviewTime] 겹치는 확정 면접 확인 시작')
+  let warning: string | undefined
+  const { data: sameDateInterviews, error: sameDateError } = await supabase
+    .from('interview_proposals')
+    .select('id, interview_time')
+    .eq('academy_user_id', session.userId)
+    .eq('interview_date', proposedDate)
+    .not('interview_time', 'is', null)
+    .neq('id', proposalId)
+
+  if (sameDateError) {
+    console.error('[proposeInterviewTime] 겹치는 면접 확인 실패 (무시):', sameDateError.message)
+  } else if (sameDateInterviews && sameDateInterviews.length > 0) {
+    console.warn('[proposeInterviewTime] 같은 날짜에 이미 확정된 면접 존재:', sameDateInterviews)
+    warning = `${proposedDate}에 이미 확정된 면접이 ${sameDateInterviews.length}건 있습니다. 시간이 겹치지 않는지 확인해주세요.`
+  }
+
+  // 7. interview_proposals 업데이트
   console.log('[proposeInterviewTime] interview_proposals 업데이트')
   const { error: updateError } = await supabase
     .from('interview_proposals')
@@ -397,5 +416,5 @@ export async function proposeInterviewTime(
   }
 
   console.log('[proposeInterviewTime] 완료')
-  return { success: true }
+  return { success: true, warning }
 }
