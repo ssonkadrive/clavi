@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WeightedSkillSelector, { WeightedSkill } from '@/components/WeightedSkillSelector'
+import PreferredSchoolSelector, { PreferredSchool } from '@/components/PreferredSchoolSelector'
 import { updateAcademyConditions } from './actions'
 
 interface SkillCategory {
@@ -21,6 +22,7 @@ interface ConditionsData {
   weekdays?: string | null
   description?: string | null
   required_skills?: string[] | null
+  preferred_schools?: PreferredSchool[] | null
 }
 
 interface ConditionsFormProps {
@@ -44,6 +46,9 @@ export default function ConditionsForm({
   const [payMax, setPayMax] = useState('')
   const [weekdays, setWeekdays] = useState('all')
   const [description, setDescription] = useState('')
+  const [preferredSchools, setPreferredSchools] = useState<PreferredSchool[]>(
+    initialConditions.preferred_schools || []
+  )
 
   console.log('[ConditionsForm] 마운트됨, initialConditions:', initialConditions)
 
@@ -54,6 +59,7 @@ export default function ConditionsForm({
       setPayMax(initialConditions.pay_max ? String(initialConditions.pay_max) : '')
       setWeekdays(initialConditions.weekdays || 'all')
       setDescription(initialConditions.description || '')
+      setPreferredSchools(initialConditions.preferred_schools || [])
     }
   }, [initialConditions])
 
@@ -76,6 +82,7 @@ export default function ConditionsForm({
         weekdays,
         description: description.trim(),
         requiredSkills: weightedSkills,
+        preferredSchools,
       })
 
       if (result.error) {
@@ -195,6 +202,11 @@ export default function ConditionsForm({
             />
           </div>
         </div>
+      </div>
+
+      {/* 선호 출신 학교 섹션 */}
+      <div>
+        <PreferredSchoolSelector value={preferredSchools} onChange={setPreferredSchools} />
       </div>
 
       {/* 필요 역량 섹션 */}

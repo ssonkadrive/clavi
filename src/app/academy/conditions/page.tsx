@@ -56,7 +56,7 @@ export default async function AcademyConditionsPage() {
   console.log('[AcademyConditionsPage] academy_conditions 조회 시작:', session.userId)
   const { data: existingConditions, error: condError } = await supabase
     .from('academy_conditions')
-    .select('pay_min, pay_max, weekdays, description, required_skills')
+    .select('pay_min, pay_max, weekdays, description, required_skills, preferred_schools')
     .eq('user_id', session.userId)
     .maybeSingle()
 
@@ -87,6 +87,7 @@ export default async function AcademyConditionsPage() {
     weekdays: existingConditions?.weekdays || null,
     description: existingConditions?.description || null,
     required_skills: existingConditions?.required_skills || null,
+    preferred_schools: existingConditions?.preferred_schools || null,
   }
 
   return (

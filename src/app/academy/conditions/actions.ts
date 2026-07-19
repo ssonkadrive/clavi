@@ -7,6 +7,12 @@ export interface WeightedSkill {
   weight: number
 }
 
+export interface PreferredSchool {
+  school_id: string
+  school_name: string
+  weight: number
+}
+
 interface UpdateConditionsParams {
   userId: string
   region: string
@@ -15,6 +21,7 @@ interface UpdateConditionsParams {
   weekdays: string
   description: string
   requiredSkills: WeightedSkill[]
+  preferredSchools: PreferredSchool[]
 }
 
 export async function updateAcademyConditions(params: UpdateConditionsParams) {
@@ -53,6 +60,7 @@ export async function updateAcademyConditions(params: UpdateConditionsParams) {
         weekdays: params.weekdays,
         description: params.description,
         required_skills: params.requiredSkills,
+        preferred_schools: params.preferredSchools,
       })
       .select()
 

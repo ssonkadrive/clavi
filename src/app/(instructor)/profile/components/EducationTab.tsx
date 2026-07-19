@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import SchoolAutocomplete, { School } from '@/components/SchoolAutocomplete'
 
 interface Education {
   school_name: string
+  school_id: string | null
   degree: string
   major: string
   graduation_year: number
@@ -12,6 +14,7 @@ interface Education {
 
 const DEFAULT_EDUCATION: Education = {
   school_name: '',
+  school_id: null,
   degree: '대졸',
   major: '',
   graduation_year: new Date().getFullYear(),
@@ -84,6 +87,7 @@ export default function EducationTab() {
         const loaded = parsed as Partial<Education>
         setEducation({
           school_name: loaded.school_name ?? '',
+          school_id: loaded.school_id ?? null,
           degree: loaded.degree ?? '대졸',
           major: loaded.major ?? '',
           graduation_year: typeof loaded.graduation_year === 'number' ? loaded.graduation_year : new Date().getFullYear(),
@@ -103,8 +107,8 @@ export default function EducationTab() {
   const handleSave = async () => {
     try {
       // 데이터 유효성 확인
-      if (!education.school_name.trim()) {
-        alert('학교명을 입력하세요.')
+      if (!education.school_id) {
+        alert('자동완성 목록에서 학교를 선택하세요.')
         return
       }
 
@@ -128,6 +132,7 @@ export default function EducationTab() {
       // education 객체를 명시적으로 구성
       const educationPayload = {
         school_name: String(education.school_name || ''),
+        school_id: education.school_id,
         degree: String(education.degree || '대졸'),
         major: String(education.major || ''),
         graduation_year: Number(education.graduation_year) || new Date().getFullYear(),
@@ -224,13 +229,11 @@ export default function EducationTab() {
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">학교명</label>
-        <input
-          type="text"
+        <SchoolAutocomplete
           value={education.school_name}
-          onChange={(e) =>
-            setEducation({ ...education, school_name: e.target.value })
+          onSelect={(school) =>
+            setEducation({ ...education, school_name: school.name, school_id: school.id })
           }
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="예: 서울대학교"
         />
       </div>

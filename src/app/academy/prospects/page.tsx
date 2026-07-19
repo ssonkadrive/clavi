@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { updateHiringDecision } from './actions'
+import { parseEducation, formatEducation } from '@/lib/utils/parseEducation'
 
 interface Skill {
   id: string
@@ -57,7 +58,7 @@ export default function ProspectsPage() {
         // 1. 학원의 채용 조건 조회 (required_skills)
         const { data: academyConditions, error: condError } = await supabase
           .from('academy_conditions')
-          .select('required_skills')
+          .select('required_skills, preferred_schools')
           .eq('user_id', user.id)
           .single()
 
@@ -68,6 +69,7 @@ export default function ProspectsPage() {
         }
 
         const requiredSkills = academyConditions?.required_skills || []
+        const preferredSchools = academyConditions?.preferred_schools || []
         console.log('[ProspectsPage] requiredSkills:', requiredSkills)
 
         // 2. 학원이 보낸 면접 제안 중 상태가 'accepted' (면접본) 강사들 조회
@@ -144,13 +146,14 @@ export default function ProspectsPage() {
             name: skillMap.get(skillId) || '알 수 없는 스킬',
           }))
 
-          const cms = calculateWeightedCMS(selectedSkillIds, requiredSkills)
+          const instructorSchoolId = parseEducation(profile?.education)?.school_id || null
+          const cms = calculateWeightedCMS(selectedSkillIds, requiredSkills, instructorSchoolId, preferredSchools)
 
           return {
             id: proposal.id,
             instructor_user_id: proposal.instructor_user_id,
             instructor_name: profile?.name || '알 수 없는 강사',
-            education: profile?.education || '',
+            education: formatEducation(profile?.education),
             degree_status: profile?.degree_status || '',
             instructor_skills: selectedSkillsWithNames,
             cms_score: cms,
@@ -183,24 +186,40 @@ export default function ProspectsPage() {
     loadProspects()
   }, [supabase, router])
 
-  // CMS 점수 계산 함수 (가중치 기반)
+  const MAX_SCHOOL_WEIGHT = 5
+  const EDUCATION_WEIGHT_RATIO = 0.15
+
+  // CMS 점수 계산 함수 (역량 매칭 85% + 학력(출신학교) 선호도 15%)
+  // 원장이 선호 학교를 등록하지 않았다면 학력 가중치는 반영하지 않고 역량 점수를 그대로 사용한다.
   const calculateWeightedCMS = (
     instructorSkills: string[],
-    requiredSkills: Array<{ skill_id: string; weight: number }>
+    requiredSkills: Array<{ skill_id: string; weight: number }>,
+    instructorSchoolId: string | null,
+    preferredSchools: Array<{ school_id: string; weight: number }>
   ): number => {
     if (requiredSkills.length === 0) return 0
 
     // 전체 가중치 합 계산
     const totalWeight = requiredSkills.reduce((sum, s) => sum + s.weight, 0)
-    if (totalWeight === 0) return 0
+    let skillScore = 0
+    if (totalWeight > 0) {
+      // 강사가 보유한 스킬의 가중치 합 계산
+      const matchedWeight = requiredSkills.reduce((sum, req) => {
+        return instructorSkills.includes(req.skill_id) ? sum + req.weight : sum
+      }, 0)
+      skillScore = Math.round((matchedWeight / totalWeight) * 100)
+    }
 
-    // 강사가 보유한 스킬의 가중치 합 계산
-    const matchedWeight = requiredSkills.reduce((sum, req) => {
-      return instructorSkills.includes(req.skill_id) ? sum + req.weight : sum
-    }, 0)
+    if (!preferredSchools || preferredSchools.length === 0) {
+      return skillScore
+    }
 
-    // 백분율 계산
-    return Math.round((matchedWeight / totalWeight) * 100)
+    const matched = instructorSchoolId
+      ? preferredSchools.find((s) => s.school_id === instructorSchoolId)
+      : undefined
+    const educationScore = matched ? (matched.weight / MAX_SCHOOL_WEIGHT) * 100 : 0
+
+    return Math.round(skillScore * (1 - EDUCATION_WEIGHT_RATIO) + educationScore * EDUCATION_WEIGHT_RATIO)
   }
 
   // CMS 배경색 결정
