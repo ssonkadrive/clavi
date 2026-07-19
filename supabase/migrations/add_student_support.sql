@@ -95,3 +95,19 @@ CREATE POLICY "Authenticated users can view skill categories"
   FOR SELECT
   TO authenticated
   USING (true);
+
+-- 7. 강사가 자신에게 수강 신청한 학생 정보를 조회할 수 있도록 SELECT 정책 추가
+-- (강사-학생 관계가 있는 경우에만 허용, 무관한 학생 정보는 조회 불가)
+DROP POLICY IF EXISTS "Instructors can view students who requested them"
+  ON students;
+CREATE POLICY "Instructors can view students who requested them"
+  ON students
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM instructor_sessions
+      WHERE instructor_sessions.student_user_id = students.user_id
+      AND instructor_sessions.instructor_user_id = auth.uid()
+    )
+  );

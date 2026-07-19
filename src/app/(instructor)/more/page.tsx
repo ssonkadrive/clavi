@@ -32,6 +32,14 @@ export default function InstructorMorePage() {
           </Link>
 
           <Link
+            href="/students"
+            className="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+          >
+            <p className="font-medium text-gray-900">🎓 수강 신청 관리</p>
+            <p className="text-sm text-gray-600 mt-1">학생 수강 신청 확인 및 응답</p>
+          </Link>
+
+          <Link
             href="/settings"
             className="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
           >

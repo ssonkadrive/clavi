@@ -26,6 +26,8 @@ const getNotificationIcon = (type: string) => {
       return '📅'
     case 'interview_confirmed':
       return '✅'
+    case 'session_request':
+      return '🎓'
     default:
       return '🔔'
   }
@@ -126,7 +128,12 @@ export default function NotificationList({ initialNotifications }: NotificationL
   return (
     <div className="space-y-3">
       {notifications.map((notification) => {
-        const link = notification.academyUserId ? `/matches/${notification.academyUserId}` : '#'
+        const link =
+          notification.type === 'session_request'
+            ? '/students'
+            : notification.academyUserId
+              ? `/matches/${notification.academyUserId}`
+              : '#'
 
         return (
           <div

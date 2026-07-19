@@ -47,7 +47,9 @@ export default async function InstructorNotificationsPage() {
   }
 
   const instructorNotifications = result.notifications.filter((n) => {
-    return ['proposal', 'interview_proposed', 'interview_confirmed'].includes(n.type)
+    return ['proposal', 'interview_proposed', 'interview_confirmed', 'session_request'].includes(
+      n.type
+    )
   })
 
   // 디버깅: academyUserId 확인

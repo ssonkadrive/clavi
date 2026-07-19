@@ -228,14 +228,12 @@ export async function requestInstructor(
     const studentName = studentData?.name || '학생'
 
     const { error: notificationError } = await supabase.from('notifications').insert({
-      user_id: instructorUserId,
+      recipient_id: instructorUserId,
+      recipient_role: 'instructor',
       type: 'session_request',
       title: '새로운 수강 신청',
       message: `${studentName}님이 수강을 신청했습니다.`,
-      metadata: {
-        session_id: sessionData?.id,
-        student_user_id: session.userId,
-      },
+      read: false,
     })
 
     if (notificationError) {
