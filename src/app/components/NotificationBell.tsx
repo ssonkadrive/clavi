@@ -19,7 +19,9 @@ export default async function NotificationBell() {
   }
 
   const notificationPath =
-    session.role === 'academy' ? '/academy/notifications' : '/notifications'
+    session.role === 'academy' ? '/academy/notifications'
+    : session.role === 'student' ? '/student/notifications'
+    : '/notifications'
 
   return (
     <Link
