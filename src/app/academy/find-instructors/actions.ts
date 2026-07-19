@@ -249,17 +249,56 @@ export async function submitInstructorProposal(
         created_at: new Date().toISOString(),
       })
       .select()
+      .single()
 
-    if (insertError) {
+    if (insertError || !result) {
       console.error('[submitInstructorProposal] insert 실패:', {
-        message: insertError.message,
-        code: insertError.code,
-        details: insertError.details,
+        message: insertError?.message,
+        code: insertError?.code,
+        details: insertError?.details,
       })
-      return { success: false, error: `제안 등록 실패: ${insertError.message}` }
+      return { success: false, error: `제안 등록 실패: ${insertError?.message}` }
     }
 
     console.log('[submitInstructorProposal] 성공:', result)
+
+    // 4. 원장 정보 조회 (알림 문구용)
+    console.log('[submitInstructorProposal] 원장 정보 조회')
+    const { data: academy, error: academyError } = await supabase
+      .from('academies')
+      .select('academy_name')
+      .eq('user_id', session.userId)
+      .single()
+
+    if (academyError || !academy) {
+      console.error('[submitInstructorProposal] 원장 정보 조회 실패:', academyError?.message)
+    }
+
+    // 5. 알림 생성 (알림 로직 - 선택적)
+    try {
+      console.log('[submitInstructorProposal] 강사 알림 생성')
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          recipient_id: instructorUserId,
+          recipient_role: 'instructor',
+          type: 'proposal',
+          related_proposal_id: result.id,
+          title: `${academy?.academy_name || '학원'}에서 채용 제안했습니다`,
+          message: `${academy?.academy_name || '학원'}에서 면접 제안을 보냈습니다. 수락 또는 거절해주세요.`,
+          read: false,
+        })
+
+      if (notificationError) {
+        console.error('[submitInstructorProposal] 알림 생성 실패 (무시):', notificationError.message)
+        // 알림 생성 실패는 무시하고 진행 (DB 로직은 성공했으므로)
+      } else {
+        console.log('[submitInstructorProposal] 강사 알림 생성 성공')
+      }
+    } catch (err) {
+      console.error('[submitInstructorProposal] 알림 생성 중 예외 (무시):', err)
+    }
+
     return { success: true }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
